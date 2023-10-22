@@ -2,19 +2,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "./reading_structs.h"
+#include <assert.h>
+#include "./src/reading_structs.h"
+#include "./src/metacommand.h"
 
 #define STRING_MAX_SIZE 50
-
-typedef enum {
-  META_EXIT,
-  META_INFO
-} MetaCommand;
-
-typedef enum {
-
-} MetaResult;
-
 
 void print_prompt() {
   printf("db > ");
@@ -26,15 +18,11 @@ int main() {
   Statement* statement = get_statement();
 
   while(loop) {
-    print_prompt();
 
+    print_prompt();
     read_buffer(input_buffer);
 
-    if(strcmp(input_buffer->buffer, ".exit") == 0) {
-      close_input_buffer(input_buffer);
-      exit(EXIT_SUCCESS);
-    }
-
+    do_meta_command(input_buffer);
     StatementResult statement_result = prepare_statement(input_buffer, statement);
 
     if(statement_result == STATEMENT_SUCCESS) {
