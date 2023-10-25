@@ -16,13 +16,29 @@ describe 'database' do
 
   it 'inserts and retrieves a row' do
     result = run_script([
-      "insert 1 user1 person1@example.com",
+      "insert (user1,person1@example.com)",
       "select",
       ".exit"
     ])
     expect(result).to match_array([
       "db > Executed.",
       "db > (1, user1, person1@example.com)",
+      "db > ",
+    ])
+  end
+
+  it 'inserts 2 rows and retrieves 2 rows' do
+    result = run_script([
+      "insert (user1,person1@example.com)",
+      "insert (user2,person2@example.com)",
+      "select",
+      ".exit"
+    ])
+    expect(result).to match_array([
+      "db > Executed.",
+      "db > Executed.",
+      "db > (1, user1, person1@example.com)",
+      "(2, user2, person2@example.com)",
       "db > ",
     ])
   end
@@ -45,30 +61,6 @@ describe 'database' do
 
     expect(result).to match_array([
       "db > Unrecognized command .table.",
-      "db > "
-    ])
-  end
-
-  it 'test select statement' do
-    result = run_script([
-      "select (a,b)",
-      ".exit"
-    ])
-
-    expect(result).to match_array([
-      "db > Select Statement.",
-      "db > "
-    ])
-  end
-
-  it 'test uppercase select statement' do
-    result = run_script([
-      "SELECT (a,b)",
-      ".exit"
-    ])
-
-    expect(result).to match_array([
-      "db > Select Statement.",
       "db > "
     ])
   end

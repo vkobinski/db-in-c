@@ -3,15 +3,25 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <inttypes.h>
 #include "./src/reading_structs.h"
 #include "./src/metacommand.h"
-
-#define STRING_MAX_SIZE 50
+#include "./src/record.h"
 
 void print_prompt() {
   printf("db > ");
 }
+
+Records* get_records() {
+  Records* records = (Records*) malloc(sizeof(Records));
+  records->row_count = 0;
+  return records;
+}
+
 int main() {
+
+  // TODO: [Data-Structure] Change this.
+  Records* records = get_records();
 
   int loop = 1;
   InputBuffer* input_buffer = get_input_buffer();
@@ -23,21 +33,7 @@ int main() {
     read_buffer(input_buffer);
 
     do_meta_command(input_buffer);
-    StatementResult statement_result = prepare_statement(input_buffer, statement);
-
-    if(statement_result == STATEMENT_SUCCESS) {
-      if(statement->type == SELECT) {
-        printf("Select Statement.\n");
-      }
-      if(statement->type == INSERT) {
-        printf("Insert Statement.\n");
-      }
-
-      continue;
-    }
-
-    printf("Unrecognized command %s.\n", input_buffer->buffer);
-
+    StatementResult statement_result = prepare_statement(input_buffer, statement, records);
   }
 
   return 0;

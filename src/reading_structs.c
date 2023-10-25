@@ -1,4 +1,6 @@
 #include "./reading_structs.h"
+#include "./record.h"
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -33,10 +35,7 @@ void read_buffer(InputBuffer* input_buffer) {
 
   input_buffer->input_length = bytes_read - 1;
   input_buffer->buffer[bytes_read-1] = 0;
-
 }
-
-
 
 Statement* get_statement() {
   Statement* statement = (Statement*) malloc(sizeof(Statement));
@@ -46,35 +45,66 @@ Statement* get_statement() {
   return statement;
 }
 
-StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement) {
+int find_higher_id(Records* records) {
+  return records->row_count + 1;
+}
+
+SelectResult execute_select(Records* records) {
+  for(int i = 0; i < records->row_count; i++) {
+    Row* row = records->rows[i];
+    printf("(%"PRIu32", %s, %s)\n", row->id, row->username, row->email);
+  }
+
+  return SELECT_SUCCESS;
+}
+
+InsertResult execute_insert(Records* records, Row* row) {
+
+  if(records->row_count == MAX_ROWS) return INSERT_MAX_ROWS_ERROR;
+
+  row->id = find_higher_id(records);
+  records->rows[records->row_count] = row;
+  records->row_count += 1;
+
+  return INSERT_SUCCESS;
+}
+
+StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Records* records) {
+  char* token;
+  token = strtok(NULL, " ");
+
+  if(strncmp(token, "(", 1) != 0) return STATEMENT_INSERT_WRONG_ARGUMENTS;
+
+  token++;
+  token[strlen(token)-1] = '\0';
+
+  char* username = strtok(token, ",");
+  char* email = strtok(NULL, ",");
+
+  Row* row = get_row();
+  memcpy(row->username, username, strlen(username));
+  memcpy(row->email, email, strlen(email));
+
+  if(execute_insert(records, row) == INSERT_SUCCESS) {
+    printf("Executed.\n");
+  }
+
+  return STATEMENT_SUCCESS;
+}
+
+StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Records* records) {
   char* token;
   token = strtok(input_buffer->buffer, " ");
   lower_case_string(token);
 
-  if(strcmp(token, "select") == 0)  {
-    statement->type = SELECT;
+  if(strcmp(token, "select") == 0) {
+    execute_select(records);
+    return STATEMENT_SUCCESS;
+  } else if(strcmp(token, "insert") == 0) {
+    return prepare_insert(input_buffer, statement, records);
   }
-  if(strcmp(token, "insert") == 0) {
-    statement->type = INSERT;
-  }
+  else return NOT_STATEMENT;
 
-  token = strtok(NULL, " ");
-
-  while(token != NULL) {
-    size_t size = strlen(token);
-
-    if(size >= STRING_MAX_SIZE-1) {
-      return STATEMENT_STRING_TOO_LONG;
-    }
-
-    statement->tokens[statement->count] = malloc(sizeof(char)*STRING_MAX_SIZE);
-    statement->tokens[statement->count] = token;
-
-    statement->count++;
-    token = strtok(NULL, " ");
-  }
-
-  return STATEMENT_SUCCESS;
 }
 
 
