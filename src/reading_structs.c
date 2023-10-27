@@ -45,31 +45,31 @@ Statement* get_statement() {
   return statement;
 }
 
-int find_higher_id(Records* records) {
-  return records->row_count + 1;
+int find_highest_id(Table* table) {
+  return table->num_rows;
 }
 
-SelectResult execute_select(Records* records) {
-  for(int i = 0; i < records->row_count; i++) {
-    Row* row = records->rows[i];
+SelectResult execute_select(Table* table) {
+
+  for(uint32_t i = 0; i < table->num_rows; i++) {
+    Row* row = row_slot(table, i+1);
     printf("(%"PRIu32", %s, %s)\n", row->id, row->username, row->email);
   }
 
   return SELECT_SUCCESS;
 }
 
-InsertResult execute_insert(Records* records, Row* row) {
+InsertResult execute_insert(Table* table, Row* row) {
 
-  if(records->row_count == MAX_ROWS) return INSERT_MAX_ROWS_ERROR;
+  if(table->num_rows == TOTAL_ROWS) return INSERT_MAX_ROWS_ERROR;
 
-  row->id = find_higher_id(records);
-  records->rows[records->row_count] = row;
-  records->row_count += 1;
+  row->id = find_highest_id(table) + 1;
+  set_row(table, row);
 
   return INSERT_SUCCESS;
 }
 
-StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Records* records) {
+StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Table* table) {
   char* token;
   token = strtok(NULL, " ");
 
@@ -85,23 +85,23 @@ StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, 
   memcpy(row->username, username, strlen(username));
   memcpy(row->email, email, strlen(email));
 
-  if(execute_insert(records, row) == INSERT_SUCCESS) {
+  if(execute_insert(table, row) == INSERT_SUCCESS) {
     printf("Executed.\n");
   }
 
   return STATEMENT_SUCCESS;
 }
 
-StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Records* records) {
+StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Table* table) {
   char* token;
   token = strtok(input_buffer->buffer, " ");
   lower_case_string(token);
 
   if(strcmp(token, "select") == 0) {
-    execute_select(records);
+    execute_select(table);
     return STATEMENT_SUCCESS;
   } else if(strcmp(token, "insert") == 0) {
-    return prepare_insert(input_buffer, statement, records);
+    return prepare_insert(input_buffer, statement, table);
   }
   else return NOT_STATEMENT;
 

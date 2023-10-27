@@ -12,16 +12,10 @@ void print_prompt() {
   printf("db > ");
 }
 
-Records* get_records() {
-  Records* records = (Records*) malloc(sizeof(Records));
-  records->row_count = 0;
-  return records;
-}
-
 int main() {
 
   // TODO: [Data-Structure] Change this.
-  Records* records = get_records();
+  Table* table = get_table();
 
   int loop = 1;
   InputBuffer* input_buffer = get_input_buffer();
@@ -33,7 +27,7 @@ int main() {
     read_buffer(input_buffer);
 
     do_meta_command(input_buffer);
-    StatementResult statement_result = prepare_statement(input_buffer, statement, records);
+    StatementResult statement_result = prepare_statement(input_buffer, statement, table);
   }
 
   return 0;

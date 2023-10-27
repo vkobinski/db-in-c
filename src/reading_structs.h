@@ -50,14 +50,12 @@ typedef enum {
   INSERT_MAX_ROWS_ERROR,
 } InsertResult;
 
-int find_higher_id(Records* records);
+int find_higher_id(Table* table);
 
 Statement* get_statement();
 
-StatementResult prepare_select(InputBuffer* input_buffer, Statement* statement, Records* records);
-
-StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Records* records);
-
-StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Records* records);
+StatementResult prepare_select(InputBuffer* input_buffer, Statement* statement, Table* table);
+StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Table* table);
+StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Table* table);
 
 #endif

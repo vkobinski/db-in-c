@@ -72,7 +72,7 @@ describe 'database' do
     ])
 
     expect(result).to match_array([
-      "db > Insert Statement.",
+      "db > Executed.",
       "db > "
     ])
   end
@@ -84,7 +84,7 @@ describe 'database' do
     ])
 
     expect(result).to match_array([
-      "db > Insert Statement.",
+      "db > Executed.",
       "db > "
     ])
   end
