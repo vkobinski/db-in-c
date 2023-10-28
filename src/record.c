@@ -10,18 +10,6 @@ Row* get_row() {
   return row;
 }
 
-Row* row_slot(Table* table, uint32_t row_id) {
-
-  Page* row_page = table->pages[row_id/ROWS_PER_PAGE];
-  if(row_page == NULL) {
-    row_page = malloc(sizeof(Page));
-    table->pages[row_id/ROWS_PER_PAGE] = row_page;
-  }
-
-  return row_page->rows[row_id % ROWS_PER_PAGE];
-
-}
-
 Page* row_page(Table* table, uint32_t row_id) {
 
   Page* row_page = table->pages[row_id/ROWS_PER_PAGE];
@@ -31,6 +19,13 @@ Page* row_page(Table* table, uint32_t row_id) {
   }
 
   return row_page;
+
+}
+
+Row* row_slot(Table* table, uint32_t row_id) {
+
+  Page* page_for_row = row_page(table, row_id);
+  return page_for_row->rows[row_id % ROWS_PER_PAGE];
 
 }
 
