@@ -2,7 +2,7 @@
 #define READING_STRUCTS_H
 
 #include <sys/types.h>
-#include "./record.h"
+#include "record.h"
 
 #define STRING_MAX_SIZE 50
 

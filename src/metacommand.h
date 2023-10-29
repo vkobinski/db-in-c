@@ -2,6 +2,7 @@
 #define METACOMMAND_H
 
 #include "./reading_structs.h"
+#include "./record.h"
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>

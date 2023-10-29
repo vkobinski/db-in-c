@@ -52,7 +52,7 @@ int find_highest_id(Table* table) {
 SelectResult execute_select(Table* table) {
 
   for(uint32_t i = 0; i < table->num_rows; i++) {
-    Row* row = row_slot(table, i+1);
+    Row* row = deserialize_row(table, i+1);
     printf("(%"PRIu32", %s, %s)\n", row->id, row->username, row->email);
   }
 
@@ -64,7 +64,9 @@ InsertResult execute_insert(Table* table, Row* row) {
   if(table->num_rows == TOTAL_ROWS) return INSERT_MAX_ROWS_ERROR;
 
   row->id = find_highest_id(table) + 1;
-  set_row(table, row);
+  serialize_row(table, row);
+
+  table->num_rows++;
 
   return INSERT_SUCCESS;
 }
@@ -106,5 +108,3 @@ StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statemen
   else return NOT_STATEMENT;
 
 }
-
-

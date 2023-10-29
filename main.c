@@ -12,10 +12,15 @@ void print_prompt() {
   printf("db > ");
 }
 
-int main() {
+int main(int argc, char** argv) {
+  if(argc < 2) {
+    printf("Must supply database filename.\n");
+    exit(EXIT_FAILURE);
+  }
 
   // TODO: [Data-Structure] Change this.
-  Table* table = get_table();
+  char* filename = argv[1];
+  Table* table = db_open(filename);
 
   int loop = 1;
   InputBuffer* input_buffer = get_input_buffer();

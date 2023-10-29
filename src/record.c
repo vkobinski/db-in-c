@@ -1,6 +1,35 @@
 #include "record.h"
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+
+const ssize_t id_offset = sizeof(uint32_t);
+const ssize_t username_offset = id_offset;
+const ssize_t email_offset = username_offset + sizeof(char) * STRING_MAX_SIZE;
+const ssize_t string_sizes = sizeof(char) * STRING_MAX_SIZE;
+
+Row* deserialize_row(Table* table, uint32_t row_id) {
+  void* row_start = row_slot(table, row_id);
+
+  Row* row = get_row();
+  row->id = row_id;
+
+  memcpy(row->username, row_start + username_offset, string_sizes);
+  memcpy(row->email, row_start + email_offset, string_sizes);
+
+  return row;
+}
+
+void serialize_row(Table* table, Row* row) {
+  void* row_start = row_slot(table, row->id);
+
+  memcpy(row_start, &(row->id), sizeof(uint32_t));
+  memcpy(row_start + username_offset, &(row->username), string_sizes);
+  memcpy(row_start + email_offset, &(row->email), string_sizes);
+}
 
 Row* get_row() {
 
@@ -10,43 +39,83 @@ Row* get_row() {
   return row;
 }
 
-Page* row_page(Table* table, uint32_t row_id) {
+void* get_page(Table* table, uint32_t page_num) {
+  Pager* pager = table->pager;
 
-  Page* row_page = table->pages[row_id/ROWS_PER_PAGE];
-  if(row_page == NULL) {
-    row_page = malloc(sizeof(Page));
-    table->pages[row_id/ROWS_PER_PAGE] = row_page;
+  if(pager->pages[page_num] == NULL) {
+    // Cache miss.
+    void* page = malloc(PAGE_SIZE);
+    uint32_t num_pages = pager->file_length / PAGE_SIZE;
+
+    if(pager->file_length % PAGE_SIZE) {
+      num_pages += 1;
+    }
+
+    if(page_num <= num_pages) {
+      lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+      ssize_t bytes_read = read(pager->file_descriptor, page, PAGE_SIZE);
+
+      if(bytes_read == -1) {
+        printf("Error reading file: %d\n", errno);
+        exit(-1);
+      }
+
+      pager->pages[page_num] = page;
+    }
+
   }
 
+  return pager->pages[page_num];
+
+}
+
+void* row_page(Table* table, uint32_t row_id) {
+  Pager* pager = table->pager;
+  void* row_page = pager->pages[row_id/ROWS_PER_PAGE];
+
+  if(row_page == NULL) {
+    row_page = malloc(sizeof(Row) * ROWS_PER_PAGE);
+    pager->pages[row_id/ROWS_PER_PAGE] = row_page;
+  }
   return row_page;
 
 }
 
-Row* row_slot(Table* table, uint32_t row_id) {
+void* row_slot(Table* table, uint32_t row_id) {
+  Pager* pager = table->pager;
+  uint32_t page_num = row_id/ROWS_PER_PAGE;
+  void* page = get_page(table, page_num);
 
-  Page* page_for_row = row_page(table, row_id);
-  return page_for_row->rows[row_id % ROWS_PER_PAGE];
+  ssize_t row_offset = (sizeof(Row) * (row_id % ROWS_PER_PAGE));
 
-}
-
-void set_row(Table* table, Row* row) {
-
-  Page* page = row_page(table, row->id);
-
-  page->rows[row->id] = row;
-
-  table->num_rows += 1;
+  return page + row_offset;
 
 }
 
-Table* get_table() {
+Pager* pager_open(const char* filename) {
+  int file = open(filename, O_RDWR, O_CREAT, S_IWUSR, S_IRUSR);
+  if(file == -1) {
+    printf("Unable to open db file.\n");
+    exit(-1);
+  }
 
-  Table* table = (Table*) malloc(sizeof(Table));
-  table->num_rows = 0;
+  Pager* pager = malloc(sizeof(Pager));
+  pager->file_descriptor = file;
+  pager->file_length = lseek(file, 0, SEEK_END);
 
   for(uint32_t i = 0; i < MAX_TABLE_PAGES; i++) {
-    table->pages[i] = NULL;
+    pager->pages[i] = NULL;
   }
+
+  return pager;
+}
+
+Table* db_open(const char* filename) {
+  Table* table = (Table*) malloc(sizeof(Table));
+  Pager* pager = pager_open(filename);
+  table->pager = pager_open(filename);
+
+  table->num_rows = pager->file_length / sizeof(Row);
 
   return table;
 }
