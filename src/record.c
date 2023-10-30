@@ -86,7 +86,7 @@ void* row_slot(Table* table, uint32_t row_id) {
   uint32_t page_num = row_id/ROWS_PER_PAGE;
   void* page = get_page(table, page_num);
 
-  ssize_t row_offset = (sizeof(Row) * (row_id % ROWS_PER_PAGE));
+  ssize_t row_offset = (sizeof(Row) * ((row_id-1) % ROWS_PER_PAGE));
 
   return page + row_offset;
 
@@ -112,10 +112,55 @@ Pager* pager_open(const char* filename) {
 
 Table* db_open(const char* filename) {
   Table* table = (Table*) malloc(sizeof(Table));
-  Pager* pager = pager_open(filename);
   table->pager = pager_open(filename);
 
-  table->num_rows = pager->file_length / sizeof(Row);
+  table->num_rows = table->pager->file_length / sizeof(Row);
 
   return table;
+}
+
+//TODO(#6): Fix the code repetition
+void pager_flush(Table* table) {
+  Pager* pager = table->pager;
+  uint32_t num_full_pages = (table->num_rows / ROWS_PER_PAGE);
+  int fd = pager->file_descriptor;
+
+  for(ssize_t i = 0; i < num_full_pages; i++) {
+    lseek(fd, i * PAGE_SIZE, SEEK_SET);
+    ssize_t bytes_written = write(fd, pager->pages[i], PAGE_SIZE);
+
+    if(bytes_written < PAGE_SIZE) {
+      printf("Could not write page %zd to disk.\n", i);
+      exit(EXIT_FAILURE);
+    }
+
+    free(pager->pages[i]);
+    pager->pages[i] = NULL;
+  }
+
+  uint32_t additional_rows = table->num_rows % ROWS_PER_PAGE;
+  if(additional_rows > 0) {
+    uint32_t page_num = num_full_pages;
+
+    if(pager->pages[page_num] != NULL) {
+      lseek(fd, page_num * PAGE_SIZE, SEEK_SET);
+      ssize_t bytes_written = write(fd, pager->pages[page_num], additional_rows * sizeof(Row));
+      free(pager->pages[page_num]);
+      pager->pages[page_num] = NULL;
+    }
+  }
+
+}
+
+void db_close(Table* table) {
+  pager_flush(table);
+  int result = close(table->pager->file_descriptor);
+
+  if(result == -1) {
+    printf("Error closing the db file.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  free(table->pager);
+  free(table);
 }
