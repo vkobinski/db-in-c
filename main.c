@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
-  // TODO: [Data-Structure] Change this.
+  // TODO(#4): [Data-Structure] Change this.
   char* filename = argv[1];
   Table* table = db_open(filename);
 
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     print_prompt();
     read_buffer(input_buffer);
 
-    do_meta_command(input_buffer);
+    do_meta_command(input_buffer, table);
     StatementResult statement_result = prepare_statement(input_buffer, statement, table);
   }
 
