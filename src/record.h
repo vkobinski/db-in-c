@@ -22,7 +22,7 @@ typedef struct {
   void* pages[MAX_TABLE_PAGES];
 } Pager;
 
-// TODO: [Data-Structure] implement a better memory implementation, then a b-tree implementation
+// TODO(#7): [Data-Structure] implement a better memory implementation, then a b-tree implementation
 typedef struct {
   Pager* pager;
   uint32_t num_rows;
@@ -38,6 +38,8 @@ void serialize_row(Table* table, Row* row);
 void* get_page(Table* table, uint32_t page_num);
 
 Pager* pager_open(const char* filename);
+void pager_flush(Table* table);
 Table* db_open(const char* filename);
+void db_close(Table* table);
 
 #endif
