@@ -71,6 +71,7 @@ InsertResult execute_insert(Table* table, Row* row) {
   return INSERT_SUCCESS;
 }
 
+//TODO(#5): Fix in case the insert arguments have a space between them
 StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Table* table) {
   char* token;
   token = strtok(NULL, " ");
