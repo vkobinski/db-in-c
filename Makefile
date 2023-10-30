@@ -9,10 +9,10 @@ build-test:
 	gcc $(CFLAGS) -o $(EXEC) $(FILES) -g
 
 run: build
-	./$(EXEC)
+	./$(EXEC) dbfile
 
 debug: build-test
-	gdb $(EXEC)
+	gdb $(EXEC) dbfile
 
 test: build
 	bundle exec rspec ./rspec/main_spec.rb

@@ -1,4 +1,5 @@
 #include "./metacommand.h"
+#include "./record.h"
 
 MetaCommand recognize_meta_command(InputBuffer* input_buffer) {
 
@@ -8,7 +9,7 @@ MetaCommand recognize_meta_command(InputBuffer* input_buffer) {
   return META_UNRECOGNIZED;
 }
 
-void do_meta_command(InputBuffer* input_buffer) {
+void do_meta_command(InputBuffer* input_buffer, Table* table) {
 
   if(strncmp(input_buffer->buffer,".",1) != 0) {
     return;
@@ -18,7 +19,7 @@ void do_meta_command(InputBuffer* input_buffer) {
 
   switch (command){
     case META_EXIT:
-      // TODO: Add the saving proccess here.
+      db_close(table);
       close_input_buffer(input_buffer);
       exit(EXIT_SUCCESS);
       break;

@@ -1,4 +1,10 @@
 describe 'database' do
+
+  before do
+    `rm -rf dbfile`
+    `touch dbfile`
+  end
+
   def run_script(commands)
     raw_output = nil
     IO.popen("./db dbfile", "r+") do |pipe|
@@ -88,4 +94,54 @@ describe 'database' do
       "db > "
     ])
   end
+
+  it 'test insert into database, and select after loading from the disk' do
+    result = run_script([
+      "INSERT (a,b)",
+      ".exit"
+    ])
+
+    result2 = run_script([
+      "select",
+      ".exit"
+    ])
+
+    expect(result).to match_array([
+      "db > Executed.",
+      "db > ",
+    ])
+
+    expect(result2).to match_array([
+      "db > (1, a, b)",
+      "db > ",
+    ])
+  end
+
+  it 'inserts 2 rows and retrieves 2 rows after saving' do
+    result = run_script([
+      "insert (user1,person1@example.com)",
+      "insert (user2,person2@example.com)",
+      ".exit"
+    ])
+
+    result2 = run_script([
+      "select",
+      ".exit"
+    ])
+
+    expect(result).to match_array([
+      "db > Executed.",
+      "db > Executed.",
+      "db > ",
+    ])
+
+    expect(result2).to match_array([
+      "db > (1, user1, person1@example.com)",
+      "(2, user2, person2@example.com)",
+      "db > ",
+    ])
+
+  end
+
+
 end
