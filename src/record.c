@@ -12,7 +12,7 @@ const ssize_t email_offset = username_offset + sizeof(char) * STRING_MAX_SIZE;
 const ssize_t string_sizes = sizeof(char) * STRING_MAX_SIZE;
 
 Row* deserialize_row(Table* table, uint32_t row_id) {
-  uintptr_t* row_start = row_slot(table, row_id);
+  char* row_start = row_slot(table, row_id);
 
   Row* row = get_row();
   row->id = row_id;
@@ -24,7 +24,7 @@ Row* deserialize_row(Table* table, uint32_t row_id) {
 }
 
 void serialize_row(Table* table, Row* row) {
-  uintptr_t* row_start = row_slot(table, row->id);
+  char* row_start = row_slot(table, row->id);
 
   memcpy(row_start, &(row->id), sizeof(uint32_t));
   memcpy(row_start + username_offset, &(row->username), string_sizes);
@@ -39,12 +39,12 @@ Row* get_row() {
   return row;
 }
 
-uintptr_t* get_page(Table* table, uint32_t page_num) {
+void* get_page(Table* table, uint32_t page_num) {
   Pager* pager = table->pager;
 
   if(pager->pages[page_num] == NULL) {
     // Cache miss.
-    uintptr_t* page = malloc(PAGE_SIZE);
+    void* page = malloc(PAGE_SIZE);
     uint32_t num_pages = pager->file_length / PAGE_SIZE;
 
     if(pager->file_length % PAGE_SIZE) {
@@ -69,9 +69,9 @@ uintptr_t* get_page(Table* table, uint32_t page_num) {
 
 }
 
-uintptr_t* row_page(Table* table, uint32_t row_id) {
+void* row_page(Table* table, uint32_t row_id) {
   Pager* pager = table->pager;
-  uintptr_t* row_page = pager->pages[row_id/ROWS_PER_PAGE];
+  void* row_page = pager->pages[row_id/ROWS_PER_PAGE];
 
   if(row_page == NULL) {
     row_page = malloc(sizeof(Row) * ROWS_PER_PAGE);
@@ -81,10 +81,10 @@ uintptr_t* row_page(Table* table, uint32_t row_id) {
 
 }
 
-uintptr_t* row_slot(Table* table, uint32_t row_id) {
+void* row_slot(Table* table, uint32_t row_id) {
 
   uint32_t page_num = row_id/ROWS_PER_PAGE;
-  uintptr_t* page = get_page(table, page_num);
+  char* page = get_page(table, page_num);
 
   ssize_t row_offset = (sizeof(Row) * ((row_id-1) % ROWS_PER_PAGE));
 

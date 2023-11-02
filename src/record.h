@@ -25,7 +25,7 @@ typedef enum {
 typedef struct {
   int file_descriptor;
   uint32_t file_length;
-  uintptr_t* pages[MAX_TABLE_PAGES];
+  void* pages[MAX_TABLE_PAGES];
 } Pager;
 
 // TODO(#7): [Data-Structure] implement a better memory implementation, then a b-tree implementation
@@ -37,8 +37,8 @@ typedef struct {
   char** row_names;
 } Table;
 
-uintptr_t* row_slot(Table* table, uint32_t row_id);
-uintptr_t* row_page(Table* table, uint32_t row_id);
+void* row_slot(Table* table, uint32_t row_id);
+void* row_page(Table* table, uint32_t row_id);
 
 Row* get_row();
 Row* deserialize_row(Table* table, uint32_t row_id);
@@ -48,7 +48,7 @@ void additional_rows_flush(Table* table);
 void page_flush(Pager* pager, ssize_t pos);
 void save_pager_content(Table* table);
 
-uintptr_t* get_page(Table* table, uint32_t page_num);
+void* get_page(Table* table, uint32_t page_num);
 
 Pager* pager_open(const char* filename);
 void pager_flush(Table* table);
