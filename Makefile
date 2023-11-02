@@ -1,6 +1,6 @@
 EXEC=db
 CFLAGS=-pedantic -Wall -Wextra
-FILES=main.c ./src/reading_structs.c ./src/metacommand.c ./src/record.c ./src/statements.c
+FILES=main.c ./src/reading_structs.c ./src/metacommand.c ./src/record.c ./src/statements.c ./src/string_utils.c
 
 build:
 	gcc $(CFLAGS) -o $(EXEC) $(FILES)

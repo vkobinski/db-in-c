@@ -5,6 +5,11 @@ describe 'database' do
     `touch dbfile`
   end
 
+  after do
+    `rm -rf dbfile`
+  end
+
+
   def run_script(commands)
     raw_output = nil
     IO.popen("./db dbfile", "r+") do |pipe|
@@ -32,6 +37,21 @@ describe 'database' do
       "db > ",
     ])
   end
+
+  it 'inserts and retrieves a row with space between commas' do
+    result = run_script([
+      "insert (  user1  ,  person1@example.com  )",
+      "select",
+      ".exit"
+    ])
+    expect(result).to match_array([
+      "db > Executed.",
+      "db > (1, user1, person1@example.com)",
+      "db > ",
+    ])
+  end
+
+
 
   it 'inserts 2 rows and retrieves 2 rows' do
     result = run_script([

@@ -119,41 +119,64 @@ Table* db_open(const char* filename) {
   return table;
 }
 
-//TODO(#6): Fix the code repetition
-void pager_flush(Table* table) {
-  Pager* pager = table->pager;
+void additional_rows_flush(Table* table) {
   uint32_t num_full_pages = (table->num_rows / ROWS_PER_PAGE);
+  uint32_t additional_rows = table->num_rows % ROWS_PER_PAGE;
+
+  Pager* pager = table->pager;
   int fd = pager->file_descriptor;
 
-  for(ssize_t i = 0; i < num_full_pages; i++) {
-    lseek(fd, i * PAGE_SIZE, SEEK_SET);
-    ssize_t bytes_written = write(fd, pager->pages[i], PAGE_SIZE);
-
-    if(bytes_written < PAGE_SIZE) {
-      printf("Could not write page %zd to disk.\n", i);
-      exit(EXIT_FAILURE);
-    }
-
-    free(pager->pages[i]);
-    pager->pages[i] = NULL;
-  }
-
-  uint32_t additional_rows = table->num_rows % ROWS_PER_PAGE;
   if(additional_rows > 0) {
     uint32_t page_num = num_full_pages;
 
     if(pager->pages[page_num] != NULL) {
       lseek(fd, page_num * PAGE_SIZE, SEEK_SET);
       ssize_t bytes_written = write(fd, pager->pages[page_num], additional_rows * sizeof(Row));
+
+      if(bytes_written < sizeof(Row)) {
+        ssize_t not_written_rows = (bytes_written - (additional_rows * sizeof(Row))) / sizeof(Row);
+        printf("Could not write %zd rows to disk.\n", not_written_rows);
+        exit(EXIT_FAILURE);
+      }
+
       free(pager->pages[page_num]);
       pager->pages[page_num] = NULL;
     }
   }
+}
+
+void page_flush(Pager* pager, ssize_t pos) {
+  int fd = pager->file_descriptor;
+  lseek(fd, pos * PAGE_SIZE, SEEK_SET);
+  ssize_t bytes_written = write(fd, pager->pages[pos], PAGE_SIZE);
+
+    if(bytes_written < PAGE_SIZE) {
+      printf("Could not write page %zd to disk.\n", pos);
+      exit(EXIT_FAILURE);
+    }
+
+    free(pager->pages[pos]);
+    pager->pages[pos] = NULL;
+
+}
+
+
+//TODO(#6): Fix the code repetition
+void save_pager_content(Table* table) {
+  Pager* pager = table->pager;
+  uint32_t num_full_pages = (table->num_rows / ROWS_PER_PAGE);
+  int fd = pager->file_descriptor;
+
+  for(ssize_t i = 0; i < num_full_pages; i++) {
+    page_flush(pager, i);
+  }
+
+  additional_rows_flush(table);
 
 }
 
 void db_close(Table* table) {
-  pager_flush(table);
+  save_pager_content(table);
   int result = close(table->pager->file_descriptor);
 
   if(result == -1) {

@@ -74,19 +74,33 @@ InsertResult execute_insert(Table* table, Row* row) {
 //TODO(#5): Fix in case the insert arguments have a space between them
 StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Table* table) {
   char* token;
-  token = strtok(NULL, " ");
+  token = strtok(NULL, "(");
 
-  if(strncmp(token, "(", 1) != 0) return STATEMENT_INSERT_WRONG_ARGUMENTS;
+  //if(strncmp(token, "(", 1) != 0) return STATEMENT_INSERT_WRONG_ARGUMENTS;
 
-  token++;
   token[strlen(token)-1] = '\0';
 
-  char* username = strtok(token, ",");
-  char* email = strtok(NULL, ",");
+  char* us_tok = strtok(token, ",");
+  char* em_tok = strtok(NULL, ",");
+
+  // Calloc is needed because the memory is not initialized
+  // then some noise can corrupt the strings
+
+  char* username = calloc(strlen(us_tok), sizeof(char));
+  char* email = calloc(strlen(em_tok), sizeof(char));
+
+  memcpy(username, us_tok, strlen(us_tok));
+  memcpy(email, em_tok, strlen(em_tok));
+
+  char* username_trim = trim(username);
+  char* email_trim = trim(email);
+
+  free(username);
+  free(email);
 
   Row* row = get_row();
-  memcpy(row->username, username, strlen(username));
-  memcpy(row->email, email, strlen(email));
+  memcpy(row->username, username_trim, strlen(username_trim));
+  memcpy(row->email, email_trim, strlen(email_trim));
 
   if(execute_insert(table, row) == INSERT_SUCCESS) {
     printf("Executed.\n");

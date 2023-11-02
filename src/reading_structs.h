@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include "record.h"
+#include "string_utils.h"
 
 #define STRING_MAX_SIZE 50
 

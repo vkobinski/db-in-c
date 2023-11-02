@@ -35,6 +35,10 @@ Row* get_row();
 Row* deserialize_row(Table* table, uint32_t row_id);
 void serialize_row(Table* table, Row* row);
 
+void additional_rows_flush(Table* table);
+void page_flush(Pager* pager, ssize_t pos);
+void save_pager_content(Table* table);
+
 void* get_page(Table* table, uint32_t page_num);
 
 Pager* pager_open(const char* filename);
