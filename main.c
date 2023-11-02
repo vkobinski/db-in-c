@@ -24,15 +24,19 @@ int main(int argc, char** argv) {
 
   int loop = 1;
   InputBuffer* input_buffer = get_input_buffer();
-  Statement* statement = get_statement();
 
   while(loop) {
 
     print_prompt();
     read_buffer(input_buffer);
 
-    do_meta_command(input_buffer, table);
-    StatementResult statement_result = prepare_statement(input_buffer, statement, table);
+    int is_meta = do_meta_command(input_buffer, table);
+    StatementResult statement_result = prepare_statement(input_buffer, table);
+
+    if(statement_result == NOT_STATEMENT && !is_meta) {
+      printf("Invalid command.\n");
+    }
+
   }
 
   return 0;

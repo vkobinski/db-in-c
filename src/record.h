@@ -16,20 +16,29 @@ typedef struct {
   char email[STRING_MAX_SIZE];
 } Row;
 
+typedef enum {
+  INT,
+  REAL,
+  TEXT
+} RowType;
+
 typedef struct {
   int file_descriptor;
   uint32_t file_length;
-  void* pages[MAX_TABLE_PAGES];
+  uintptr_t* pages[MAX_TABLE_PAGES];
 } Pager;
 
 // TODO(#7): [Data-Structure] implement a better memory implementation, then a b-tree implementation
 typedef struct {
   Pager* pager;
   uint32_t num_rows;
+
+  RowType** row_types;
+  char** row_names;
 } Table;
 
-void* row_slot(Table* table, uint32_t row_id);
-void* row_page(Table* table, uint32_t row_id);
+uintptr_t* row_slot(Table* table, uint32_t row_id);
+uintptr_t* row_page(Table* table, uint32_t row_id);
 
 Row* get_row();
 Row* deserialize_row(Table* table, uint32_t row_id);
@@ -39,7 +48,7 @@ void additional_rows_flush(Table* table);
 void page_flush(Pager* pager, ssize_t pos);
 void save_pager_content(Table* table);
 
-void* get_page(Table* table, uint32_t page_num);
+uintptr_t* get_page(Table* table, uint32_t page_num);
 
 Pager* pager_open(const char* filename);
 void pager_flush(Table* table);

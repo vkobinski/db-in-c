@@ -1,4 +1,5 @@
 #include "./reading_structs.h"
+
 #include "./record.h"
 #include <sys/types.h>
 #include <stdio.h>
@@ -72,7 +73,7 @@ InsertResult execute_insert(Table* table, Row* row) {
 }
 
 //TODO(#5): Fix in case the insert arguments have a space between them
-StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Table* table) {
+StatementResult prepare_insert(Table* table) {
   char* token;
   token = strtok(NULL, "(");
 
@@ -109,7 +110,7 @@ StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, 
   return STATEMENT_SUCCESS;
 }
 
-StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Table* table) {
+StatementResult prepare_statement(InputBuffer* input_buffer, Table* table) {
   char* token;
   token = strtok(input_buffer->buffer, " ");
   lower_case_string(token);
@@ -118,7 +119,7 @@ StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statemen
     execute_select(table);
     return STATEMENT_SUCCESS;
   } else if(strcmp(token, "insert") == 0) {
-    return prepare_insert(input_buffer, statement, table);
+    return prepare_insert(table);
   }
   else return NOT_STATEMENT;
 

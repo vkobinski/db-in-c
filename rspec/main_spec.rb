@@ -38,6 +38,17 @@ describe 'database' do
     ])
   end
 
+  it 'test invalid command' do
+    result = run_script([
+      "inser",
+      ".exit"
+    ])
+    expect(result).to match_array([
+      "db > Invalid command.",
+      "db > ",
+    ])
+  end
+
   it 'inserts and retrieves a row with space between commas' do
     result = run_script([
       "insert (  user1  ,  person1@example.com  )",

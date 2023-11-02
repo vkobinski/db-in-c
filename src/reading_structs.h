@@ -56,7 +56,7 @@ int find_higher_id(Table* table);
 Statement* get_statement();
 
 StatementResult prepare_select(InputBuffer* input_buffer, Statement* statement, Table* table);
-StatementResult prepare_insert(InputBuffer* input_buffer, Statement* statement, Table* table);
-StatementResult prepare_statement(InputBuffer* input_buffer, Statement* statement, Table* table);
+StatementResult prepare_insert(Table* table);
+StatementResult prepare_statement(InputBuffer* input_buffer, Table* table);
 
 #endif

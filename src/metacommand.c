@@ -9,10 +9,10 @@ MetaCommand recognize_meta_command(InputBuffer* input_buffer) {
   return META_UNRECOGNIZED;
 }
 
-void do_meta_command(InputBuffer* input_buffer, Table* table) {
+int do_meta_command(InputBuffer* input_buffer, Table* table) {
 
   if(strncmp(input_buffer->buffer,".",1) != 0) {
-    return;
+    return 0;
   }
 
   MetaCommand command = recognize_meta_command(input_buffer);
@@ -32,6 +32,7 @@ void do_meta_command(InputBuffer* input_buffer, Table* table) {
     default:
       assert(0 && "Unreachable code.");
   }
+  return 1;
 }
 
 
