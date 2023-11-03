@@ -96,9 +96,6 @@ StatementResult prepare_insert(Table* table) {
   char* username_trim = trim(username);
   char* email_trim = trim(email);
 
-  free(username);
-  free(email);
-
   Row* row = get_row();
   memcpy(row->username, username_trim, strlen(username_trim));
   memcpy(row->email, email_trim, strlen(email_trim));

@@ -1,8 +1,8 @@
 EXEC=db
 CFLAGS=-pedantic -Wall -Wextra
-FILES=main.c ./src/reading_structs.c ./src/metacommand.c ./src/record.c ./src/string_utils.c
+FILES=./src/main.c ./src/reading_structs.c ./src/metacommand.c ./src/record.c ./src/string_utils.c
 
-build:
+buil:
 	gcc $(CFLAGS) -o $(EXEC) $(FILES)
 
 build-test:
@@ -14,5 +14,5 @@ run: build
 debug: build-test
 	gdb $(EXEC) dbfile
 
-test: build
+rspec: build
 	bundle exec rspec ./rspec/main_spec.rb

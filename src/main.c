@@ -4,9 +4,9 @@
 #include <string.h>
 #include <assert.h>
 #include <inttypes.h>
-#include "./src/reading_structs.h"
-#include "./src/metacommand.h"
-#include "./src/record.h"
+#include "reading_structs.h"
+#include "metacommand.h"
+#include "record.h"
 
 void print_prompt() {
   printf("db > ");

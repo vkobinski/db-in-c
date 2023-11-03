@@ -29,9 +29,7 @@ size_t rtrim(char* str) {
 char* trim(char* str) {
   size_t triml = ltrim(str);
   size_t trimr = rtrim(str);
-
   size_t strsize = strlen(str) - (triml + trimr);
-
   char* trimmed = (char*) malloc(sizeof(char) * strsize);
 
   size_t x = 0;
@@ -43,6 +41,40 @@ char* trim(char* str) {
 
   trimmed[strsize] = '\0';
 
+  free(str);
+
   return trimmed;
+
+}
+
+char** split(char* str, const char delimeter) {
+
+  StartFinishPair pairs[50];
+  size_t len = strlen(str);
+
+  size_t last_start = 0;
+  int last_pair = 0;
+
+  for(size_t i = 0; i < strlen(str); i++) {
+
+    if(str[i] == delimeter) {
+      StartFinishPair current_pair;
+
+      current_pair.str_start = last_start;
+      current_pair.str_finish = i;
+
+      pairs[last_pair] = current_pair;
+
+      last_pair++;
+      last_start = i;
+    }
+  }
+
+  char** tokens = malloc(len);
+
+  for(size_t i = 0; i < last_pair; i++) {
+
+
+  }
 
 }
