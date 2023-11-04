@@ -7,8 +7,8 @@ describe 'database' do
 
   after do
     `rm -rf dbfile`
+    `touch dbfile`
   end
-
 
   def run_script(commands)
     raw_output = nil

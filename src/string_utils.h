@@ -5,6 +5,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#define MAX_TOKEN_QTD 50
 
 // Trim functions
 // This trim implementation returns the trimmed string and frees the original str

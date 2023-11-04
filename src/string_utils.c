@@ -47,34 +47,47 @@ char* trim(char* str) {
 
 }
 
-char** split(char* str, const char delimeter) {
+char** split(char* str, const char delimiter) {
+    StartFinishPair pairs[MAX_TOKEN_QTD];
+    size_t len = strlen(str);
 
-  StartFinishPair pairs[50];
-  size_t len = strlen(str);
+    size_t last_start = 0;
+    int last_pair = 0;
 
-  size_t last_start = 0;
-  int last_pair = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (str[i] == delimiter) {
+            StartFinishPair current_pair;
+            current_pair.str_start = last_start;
+            current_pair.str_finish = i;
 
-  for(size_t i = 0; i < strlen(str); i++) {
+            if(last_pair == 50) {
+              printf("Token limit for split function is: %d", MAX_TOKEN_QTD);
+              return NULL;
+            }
 
-    if(str[i] == delimeter) {
-      StartFinishPair current_pair;
-
-      current_pair.str_start = last_start;
-      current_pair.str_finish = i;
-
-      pairs[last_pair] = current_pair;
-
-      last_pair++;
-      last_start = i;
+            pairs[last_pair] = current_pair;
+            last_pair++;
+            last_start = i + 1;
+        }
     }
-  }
 
-  char** tokens = malloc(len);
+    char** tokens = (char**)malloc((last_pair + 1) * sizeof(char*));
+    size_t total_size = 0;
 
-  for(size_t i = 0; i < last_pair; i++) {
+    for (size_t i = 0; i < last_pair; i++) {
+        size_t current_size = pairs[i].str_finish - pairs[i].str_start;
+        tokens[i] = (char*)malloc(current_size + 1);
+        strncpy(tokens[i], str + pairs[i].str_start, current_size);
+        tokens[i][current_size] = '\0';
+        total_size++;
+    }
 
+    if (total_size < last_pair + 1) {
+        size_t current_size = len - pairs[last_pair - 1].str_finish - 1;
+        tokens[total_size] = (char*)malloc(current_size + 1);
+        strncpy(tokens[total_size], str + pairs[last_pair - 1].str_finish + 1, current_size);
+        tokens[total_size][current_size] = '\0';
+    }
 
-  }
-
+    return tokens;
 }

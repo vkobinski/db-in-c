@@ -2,3 +2,4 @@ db
 Gemfile.lock
 dbfile
 build/
+Testing/
