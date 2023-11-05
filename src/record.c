@@ -117,7 +117,7 @@ Table* db_open(const char* filename) {
   table->num_rows = table->pager->file_length / sizeof(Row);
 
   // TODO(#8): Load row information from file
-  const char* s = "(id:int, name:text, email:text)";
+  const char* s = "(name:text, email:text)";
   char* c = (char*)malloc(strlen(s)+1);
   strcpy(c,s);
   //
@@ -190,10 +190,16 @@ RowInformation* create_row_information(char* table_description) {
   char** columns = split(table_description, ',', size);
 
   RowInformation* row_information = (RowInformation*) malloc(sizeof(RowInformation));
-  row_information->row_names = malloc(sizeof(char*) * (*size));
-  row_information->columns_count = (size_t) size;
+  row_information->row_names = malloc(sizeof(char*) * (*size)+1);
+  row_information->columns_count = *size + 1;
 
+  row_information->row_types[0] = INT;
 
+  const char* s = "id";
+  char* c = (char*)malloc(strlen(s)+1);
+  strcpy(c,s);
+
+  row_information->row_names[0] = c;
 
   for(int i = 0; i < *size; i++) {
     char** column = split(columns[i],':', NULL);
@@ -202,6 +208,12 @@ RowInformation* create_row_information(char* table_description) {
     char* nome = trim(column[0]);
 
     lower_case_string(tipo);
+    lower_case_string(nome);
+
+    if(strcmp(nome, "id") == 0) {
+      printf("The id column is managed by the DATABASE, remove the %d paramn.\n", i+1);
+      exit(EXIT_FAILURE);
+    }
 
     RowType row_type;
 
@@ -213,9 +225,9 @@ RowInformation* create_row_information(char* table_description) {
       exit(EXIT_FAILURE);
     }
 
-    row_information->row_types[i] = row_type;
-    row_information->row_names[i] = (char*) malloc(sizeof(strlen(nome)) + 1);
-    memcpy(row_information->row_names[i], nome, strlen(nome) + 1);
+    row_information->row_types[i+1] = row_type;
+    row_information->row_names[i+1] = (char*) malloc(sizeof(strlen(nome)) + 1);
+    memcpy(row_information->row_names[i+1], nome, strlen(nome) + 1);
 
     free(tipo);
     free(nome);

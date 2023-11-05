@@ -47,7 +47,7 @@ char* trim(char* str) {
 
 }
 
-char** split(char* str, const char delimiter) {
+char** split(char* str, const char delimiter, int* size) {
     StartFinishPair pairs[MAX_TOKEN_QTD];
     size_t len = strlen(str);
 
@@ -70,6 +70,8 @@ char** split(char* str, const char delimiter) {
             last_start = i + 1;
         }
     }
+
+    if(size != NULL) *size = last_pair + 1;
 
     char** tokens = (char**)malloc((last_pair + 1) * sizeof(char*));
     size_t total_size = 0;

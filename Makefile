@@ -8,11 +8,11 @@ buil:
 build-test:
 	gcc $(CFLAGS) -o $(EXEC) $(FILES) -g
 
-run: build
+run: buil
 	./$(EXEC) dbfile
 
 debug: build-test
 	gdb $(EXEC) dbfile
 
-rspec: build
+rspec: buil
 	bundle exec rspec ./rspec/main_spec.rb

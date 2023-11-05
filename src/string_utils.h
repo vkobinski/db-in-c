@@ -15,11 +15,15 @@ size_t ltrim(char* str);
 size_t rtrim(char* str);
 char* trim(char* str);
 
-char** split(char* str, const char delimeter);
+void lower_case_string(char* string);
+
+char** split(char* str, const char delimeter, int* size);
 
 typedef struct {
   size_t str_start;
   size_t str_finish;
 } StartFinishPair;
+
+
 
 #endif
