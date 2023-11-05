@@ -116,6 +116,14 @@ Table* db_open(const char* filename) {
 
   table->num_rows = table->pager->file_length / sizeof(Row);
 
+  // TODO(#8): Load row information from file
+  const char* s = "(id:int, name:text, email:text)";
+  char* c = (char*)malloc(strlen(s)+1);
+  strcpy(c,s);
+  //
+
+  table->row_info = create_row_information(c);
+
   return table;
 }
 
@@ -170,6 +178,51 @@ void save_pager_content(Table* table) {
 
   additional_rows_flush(table);
 
+}
+
+// The table information will be of this form: (type:column_name, type: column_name)
+RowInformation* create_row_information(char* table_description) {
+
+  table_description++;
+  table_description[strlen(table_description)-1] = '\0';
+
+  int* size = malloc(sizeof(int));
+  char** columns = split(table_description, ',', size);
+
+  RowInformation* row_information = (RowInformation*) malloc(sizeof(RowInformation));
+  row_information->row_names = malloc(sizeof(char*) * (*size));
+  row_information->columns_count = (size_t) size;
+
+
+
+  for(int i = 0; i < *size; i++) {
+    char** column = split(columns[i],':', NULL);
+
+    char* tipo = trim(column[1]);
+    char* nome = trim(column[0]);
+
+    lower_case_string(tipo);
+
+    RowType row_type;
+
+    if(strcmp(tipo, "int") == 0) row_type = INT;
+    else if(strcmp(tipo, "real") == 0) row_type = REAL;
+    else if(strcmp(tipo, "text") == 0) row_type = TEXT;
+    else {
+      printf("Could not parse row column of type: %s\n", tipo);
+      exit(EXIT_FAILURE);
+    }
+
+    row_information->row_types[i] = row_type;
+    row_information->row_names[i] = (char*) malloc(sizeof(strlen(nome)) + 1);
+    memcpy(row_information->row_names[i], nome, strlen(nome) + 1);
+
+    free(tipo);
+    free(nome);
+
+  }
+
+  return row_information;
 }
 
 void db_close(Table* table) {
