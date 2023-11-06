@@ -111,6 +111,7 @@ Pager* pager_open(const char* filename) {
 }
 
 Table* db_open(const char* filename) {
+
   Table* table = (Table*) malloc(sizeof(Table));
   table->pager = pager_open(filename);
 
@@ -121,6 +122,9 @@ Table* db_open(const char* filename) {
   char* c = (char*)malloc(strlen(s)+1);
   strcpy(c,s);
   //
+
+  //TODO(#9): Read table name from file
+  memcpy(table->table_name, "user", 5);
 
   table->row_info = create_row_information(c);
 
