@@ -2,8 +2,8 @@
 #include "./record.h"
 
 void print_table_info(Table* table) {
-RowInformation* info = table->row_info;
-  printf("Table:\n");
+  RowInformation* info = table->row_info;
+  printf("Table %s:\n", table->table_name);
 
   for(int i = 0; i < info->columns_count; i++) {
     printf("\tColumn Name: %s, ", info->row_names[i]);

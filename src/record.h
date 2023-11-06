@@ -41,6 +41,7 @@ typedef struct {
   Pager* pager;
   uint32_t num_rows;
   RowInformation* row_info;
+  char table_name[50];
 } Table;
 
 void* row_slot(Table* table, uint32_t row_id);
