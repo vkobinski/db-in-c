@@ -53,10 +53,9 @@ uid_t find_highest_id(Table* table) {
 SelectResult execute_select(Table* table) {
 
   for(uint32_t i = 0; i < table->num_rows; i++) {
-    char* str = row_to_string(table, i+1);
-    printf("(%s)\n",str);
-
-    free(str);
+    printf("(");
+    print_row(table, i+1);
+    printf("\n");
   }
 
   return SELECT_SUCCESS;

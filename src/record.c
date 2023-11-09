@@ -21,8 +21,12 @@ Row* read_row_data(Table* table, ssize_t row_pos) {
   return row;
 }
 
-char* row_to_string(Table* table, ssize_t row_pos) {
+void print_row(Table* table, ssize_t row_pos) {
   RowInformation* info = table->row_info;
+
+  size_t string_size = row_size(table->row_info, -1);
+  size_t row_commas = table->row_info->col_count;
+
   Row* row = read_row_data(table, row_pos);
 
   uid_t cur_id;
@@ -30,49 +34,35 @@ char* row_to_string(Table* table, ssize_t row_pos) {
   char* cur_str;
   double_t cur_real;
   size_t size_col;
-  char* c;
 
   for(ssize_t i = 0; i < info->col_count; i++) {
 
     switch (info->col_types[i]) {
       case ID:
-        size_col = row_col_size(info->col_types[i]);
         cur_id = read_row_id(table->row_info, row);
-        c = (char*)malloc(size_col + 2);
-        sprintf(c ,"%d,",cur_id);
-
-        strcat(row_string, c);
-
-        free(c);
+        if(i != info->col_count - 1) printf("%d, ", cur_id);
+        else printf("%d)", cur_id);
         break;
       case INT:
-        size_col = row_col_size(info->col_types[i]);
         cur_int = read_row_int(table->row_info, row, i);
-        c = (char*)malloc(size_col + 2);
-        sprintf(c ,"%d,",cur_int);
-        strcat(row_string, c);
-        free(c);
+        if(i != info->col_count - 1) printf("%d, ", cur_int);
+        else printf("%d)", cur_int);
         break;
       case REAL:
         cur_real = read_row_real(table->row_info, row, i);
-        size_col = row_col_size(info->col_types[i]);
-        c = (char*)malloc(size_col + 2);
-        sprintf(c ,"%f,",cur_real);
-        strcat(row_string, c);
-        free(c);
+        if(i != info->col_count - 1) printf("%f, ", cur_real);
+        else printf("%f)", cur_real);
         break;
       case TEXT:
         cur_str = read_row_text(table->row_info, row, i);
-        sprintf(cur_str ,"%s,", cur_str);
-        strcat(row_string, cur_str);
+        if(i != info->col_count - 1) printf("%s, ", cur_str);
+        else printf("%s)", cur_str);
         break;
       default:
         assert(0 && "Column has type not known");
         exit(EXIT_FAILURE);
     }
   }
-
-  return row_string;
 }
 
 void serialize_row(Table* table, ssize_t row_id, Column** columns) {

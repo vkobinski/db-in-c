@@ -88,7 +88,7 @@ uid_t read_row_id(RowInformation* info, Row* row);
 char* read_row_text(RowInformation* info, Row* row, ssize_t col_pos);
 uint32_t read_row_int(RowInformation*info, Row* row, ssize_t col_pos);
 double_t read_row_real(RowInformation* info, Row* row, ssize_t col_pos);
-char* row_to_string(Table* table, ssize_t row_pos);
+void print_row(Table* table, ssize_t row_pos);
 // Storing row values functions
 void store_row_id(Table* table, Row* row, uid_t col_data);
 void store_row_text(Table* table, Row* row, ssize_t col_pos, char* col_data);
