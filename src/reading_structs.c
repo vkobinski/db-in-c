@@ -61,18 +61,6 @@ SelectResult execute_select(Table* table) {
   return SELECT_SUCCESS;
 }
 
-InsertResult execute_insert(Table* table, Row* row) {
-
-  //if(table->num_rows == total_rows(table->row_info)) return INSERT_MAX_ROWS_ERROR;
-
-  //row->id = find_highest_id(table) + 1;
-  //serialize_row(table, row);
-
-
-  //return INSERT_SUCCESS;
-
-  return INSERT_SUCCESS;
-}
 
 StatementResult prepare_insert(Table* table) {
   char* token;
@@ -157,6 +145,10 @@ StatementResult prepare_insert(Table* table) {
   return STATEMENT_SUCCESS;
 }
 
+StatementResult prepare_create_table(InputBuffer* input_buffer) {
+  assert(0 && "Not implemented");
+}
+
 StatementResult prepare_statement(InputBuffer* input_buffer, Table* table) {
   char* token;
   token = strtok(input_buffer->buffer, " ");
@@ -167,6 +159,8 @@ StatementResult prepare_statement(InputBuffer* input_buffer, Table* table) {
     return STATEMENT_SUCCESS;
   } else if(strcmp(token, "insert") == 0) {
     return prepare_insert(table);
+  } else if(strcmp(token, "create_table") == 0) {
+    return prepare_create_table(input_buffer);
   }
   else return NOT_STATEMENT;
 

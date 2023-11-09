@@ -178,11 +178,14 @@ Pager* pager_open(const char* filename) {
   return pager;
 }
 
+
 Table* db_open(const char* filename) {
   Table* table = (Table*) malloc(sizeof(Table));
 
+  table->pager = pager_open(filename);
+
   // TODO(#8): Load row information from file
-  const char* s = "(name:text, email:text, money:real)";
+  const char* s = "(name:text, email:text)";
   char* c = (char*)malloc(strlen(s)+1);
   strcpy(c,s);
   //
@@ -190,8 +193,6 @@ Table* db_open(const char* filename) {
   //TODO(#9): Read table name from file
   memcpy(table->table_name, "user", 5);
 
-
-  table->pager = pager_open(filename);
 
   table->row_info = create_row_information(c);
   size_t size = row_size(table->row_info, -1);

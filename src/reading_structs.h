@@ -24,6 +24,7 @@ void read_buffer(InputBuffer* input_buffer);
 typedef enum  {
   SELECT,
   INSERT,
+  CREATE_TABLE,
 } Statement_Type;
 
 typedef struct {
@@ -55,6 +56,7 @@ int find_higher_id(Table* table);
 
 Statement* get_statement();
 
+StatementResult prepare_create_table(InputBuffer* input_buffer);
 StatementResult prepare_select(InputBuffer* input_buffer, Statement* statement, Table* table);
 StatementResult prepare_insert(Table* table);
 StatementResult prepare_statement(InputBuffer* input_buffer, Table* table);
