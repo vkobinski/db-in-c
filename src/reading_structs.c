@@ -123,19 +123,18 @@ StatementResult prepare_insert(Table* table) {
         break;
       case REAL:
         num_d = strtod(trimmed, &err);
-        if(*err == 0) {
-          col->col_pos = i;
-          col->real = num_d;
-          col->type = REAL;
-        }
-        if (!isspace((unsigned char)*err)) {
-          printf("Could not convert %s into a Real for column %s",
-              trimmed,
-              info->col_names[i]);
-          exit(EXIT_FAILURE);
+        if (*err != 0) {
+            printf("Could not convert '%s' into a Real for column %s\n",
+                   trimmed,
+                   info->col_names[i]);
+            exit(EXIT_FAILURE);
+        } else {
+            col->col_pos = i;
+            col->real = num_d;
+            col->type = REAL;
         }
         free(trimmed);
-        break;
+      break;
       case TEXT:
         col->col_pos = i;
         col->text = trimmed;

@@ -11,6 +11,7 @@ void print_table_info(Table* table) {
     switch(info->col_types[i]) {
       case ID:
         printf("Id");
+        break;
       case INT:
         printf("Integer");
         break;

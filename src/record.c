@@ -8,13 +8,13 @@
 
 Row* deserialize_row(Table* table, ssize_t row_pos) {
 
-  intptr_t* row_start = row_slot(table, row_pos);
+  void* row_start = row_slot(table, row_pos);
   Row* row = get_row(table->row_info);
   return row;
 }
 
 Row* read_row_data(Table* table, ssize_t row_pos) {
-  intptr_t* row_start = row_slot(table, row_pos);
+  void* row_start = row_slot(table, row_pos);
   Row* row = malloc(sizeof(Row));
   row->column_data = row_start;
 
@@ -24,12 +24,9 @@ Row* read_row_data(Table* table, ssize_t row_pos) {
 void print_row(Table* table, ssize_t row_pos) {
   RowInformation* info = table->row_info;
 
-  size_t string_size = row_size(table->row_info, -1);
-  size_t row_commas = table->row_info->col_count;
-
   Row* row = read_row_data(table, row_pos);
 
-  uid_t cur_id;
+  uint32_t cur_id;
   uint32_t cur_int;
   char* cur_str;
   double_t cur_real;
@@ -110,7 +107,7 @@ void* get_page(Table* table, uint32_t page_num) {
 
   if(pager->pages[page_num] == NULL) {
     // Cache miss.
-    void* page = malloc(PAGE_SIZE);
+    void* page = calloc(1, PAGE_SIZE);
     uint32_t num_pages = pager->file_length / PAGE_SIZE;
 
     if(pager->file_length % PAGE_SIZE) {
@@ -149,14 +146,16 @@ void* row_page(Table* table, uint32_t row_id) {
 
 }
 
-void* row_slot(Table* table, uid_t row_id) {
+void* row_slot(Table* table, int32_t row_id) {
 
   RowInformation* info = table->row_info;
   size_t rows_page = rows_per_page(info);
   uint32_t page_num = row_id/rows_page;
   char* page = get_page(table, page_num);
 
-  ssize_t row_offset = (row_size(info, -1) * ((row_id-1) % rows_page));
+  size_t size = row_size(info, -1);
+
+  ssize_t row_offset = size * ((row_id-1) % rows_per_page(info));
 
   return page + row_offset;
 }
@@ -183,7 +182,7 @@ Table* db_open(const char* filename) {
   Table* table = (Table*) malloc(sizeof(Table));
 
   // TODO(#8): Load row information from file
-  const char* s = "(name:text, email:text)";
+  const char* s = "(name:text, email:text, money:real)";
   char* c = (char*)malloc(strlen(s)+1);
   strcpy(c,s);
   //
@@ -197,7 +196,6 @@ Table* db_open(const char* filename) {
   table->row_info = create_row_information(c);
   size_t size = row_size(table->row_info, -1);
   table->num_rows = table->pager->file_length / size;
-
 
   return table;
 }
@@ -217,7 +215,7 @@ void additional_rows_flush(Table* table) {
 
     if(pager->pages[page_num] != NULL) {
       lseek(fd, page_num * PAGE_SIZE, SEEK_SET);
-      uint64_t bytes_written = write(fd, pager->pages[page_num], additional_rows * size);
+      uint64_t bytes_written = write(fd, pager->pages[page_num], additional_rows* (size));
 
       if(bytes_written < size) {
         ssize_t not_written_rows = (bytes_written - (additional_rows * size)) / size;
@@ -275,39 +273,39 @@ ssize_t col_pos_by_name(RowInformation* info, char* name) {
   return col_pos;
 }
 
-size_t col_offset(RowInformation* info, ssize_t col_pos) {
-  size_t offset = row_size(info, col_pos);
+ssize_t col_offset(RowInformation* info, ssize_t col_pos) {
+  ssize_t offset = row_size(info, col_pos);
   return offset;
 }
 
-uid_t read_row_id(RowInformation* info, Row* row) {
-  intptr_t* col_addres = row->column_data + col_offset(info, 0);
-  return (uid_t) *col_addres;
+uint32_t read_row_id(RowInformation* info, Row* row) {
+  void* col_addres = row->column_data;
+  return *((uint32_t*) col_addres);
 }
 
 char* read_row_text(RowInformation* info, Row* row, ssize_t col_pos) {
-  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
+  void* col_addres = row->column_data + col_offset(info, col_pos);
   return (char*) col_addres;
 }
 
 uint32_t read_row_int(RowInformation*info, Row* row, ssize_t col_pos) {
-  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
-  return (uint32_t) *col_addres;
+  void* col_addres = row->column_data + col_offset(info, col_pos);
+  return *((uint32_t*)col_addres);
 }
 
 double_t read_row_real(RowInformation*info, Row* row, ssize_t col_pos) {
-  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
-  return (double_t) *col_addres;
+  void* col_addres = row->column_data + col_offset(info, col_pos);
+  return *((double_t*) col_addres);
 }
 
 void store_row_text(Table* table, Row* row, ssize_t col_pos, char* col_data) {
   RowInformation* info = table->row_info;
-  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
-  memcpy(col_addres, col_data, TEXT_MAX_SIZE);
+  void* col_addres = row->column_data + col_offset(info, col_pos);
+  strncpy((char*) col_addres, col_data, TEXT_MAX_SIZE + 1);
 }
 
-void store_row_id(Table* table, Row* row, uid_t col_data) {
-  intptr_t* col_addres = row->column_data + col_offset(table->row_info, 0);
+void store_row_id(Table* table, Row* row, uint32_t col_data) {
+  uint32_t* col_addres = row->column_data;
   *col_addres = col_data;
 }
 
@@ -326,7 +324,7 @@ void store_row_real(Table* table, Row* row, ssize_t col_pos, double_t col_data) 
 size_t row_col_size(ColumnType type) {
   switch(type) {
       case ID:
-        return sizeof(uid_t);
+        return sizeof(uint32_t);
         break;
       case INT:
         return sizeof(int32_t);
@@ -343,12 +341,12 @@ size_t row_col_size(ColumnType type) {
     }
 }
 
-size_t row_size(RowInformation* info, ssize_t stop_col) {
+ssize_t row_size(RowInformation* info, ssize_t stop_col) {
   ssize_t stop = info->col_count;
 
   if(stop_col != -1) stop = stop_col;
 
-  size_t size = 0;
+  ssize_t size = 0;
   for(ssize_t i = 0; i < stop; i++) {
     switch(info->col_types[i]) {
       case ID:
@@ -361,14 +359,13 @@ size_t row_size(RowInformation* info, ssize_t stop_col) {
         size += row_col_size(info->col_types[i]);
         break;
       case TEXT:
-        size += row_col_size(info->col_types[i]);
+        size += row_col_size(TEXT);
         break;
       default:
         assert(0 && "Column has type not known");
         exit(EXIT_FAILURE);
     }
   }
-
   return size;
 }
 
@@ -386,7 +383,7 @@ size_t col_size(ColumnType type) {
   size_t size;
   switch(type) {
     case ID:
-      size = sizeof(uid_t);
+      size = sizeof(uint32_t);
       break;
     case INT:
       size = sizeof(int32_t);
@@ -415,7 +412,7 @@ RowInformation* create_row_information(char* table_description) {
   char** columns = split(table_description, ',', size);
 
   RowInformation* row_information = (RowInformation*) malloc(sizeof(RowInformation));
-  row_information->col_names = malloc(sizeof(char*) * (*size)+1);
+  row_information->col_names = malloc(sizeof(char*) * (*size+1));
   row_information->col_count = *size + 1;
 
   row_information->col_types[0] = ID;

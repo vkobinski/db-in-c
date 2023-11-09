@@ -12,7 +12,7 @@
 #define MAX_COLUMNS 50
 
 typedef struct {
-  intptr_t* column_data;
+  void* column_data;
 } Row;
 
 typedef enum {
@@ -26,7 +26,7 @@ typedef struct {
   ColumnType type;
   ssize_t col_pos;
   union {
-    uid_t id;
+    uint32_t id;
     char* text;
     uint32_t integer;
     double_t real;
@@ -40,7 +40,7 @@ typedef struct {
 } Pager;
 
 typedef struct {
-  size_t row_size;
+  ssize_t row_size;
   ssize_t col_count;
   ColumnType col_types[MAX_COLUMNS];
   char** col_names;
@@ -54,8 +54,8 @@ typedef struct {
   char table_name[50];
 } Table;
 
-void* row_slot(Table* table, uid_t row_id);
-void* row_page(Table* table, uid_t row_id);
+void* row_slot(Table* table, int32_t row_id);
+void* row_page(Table* table, uint32_t row_id);
 
 
 Row* get_row(RowInformation* info);
@@ -74,7 +74,7 @@ RowInformation* create_row_information(char* table_description);
 size_t col_size(ColumnType type);
 // If the stop_col argument is -1, then the function returns
 // the size of the entire row
-size_t row_size(RowInformation* info, ssize_t stop_col);
+ssize_t row_size(RowInformation* info, ssize_t stop_col);
 size_t row_col_size(ColumnType type);
 size_t rows_per_page(RowInformation* info);
 size_t total_rows(RowInformation* info);
@@ -83,14 +83,14 @@ ssize_t col_pos_by_name(RowInformation* info, char* name);
 
 // Reading row values functions
 Row* read_row_data(Table* table, ssize_t row_pos);
-size_t col_offset(RowInformation* info, ssize_t col_pos);
-uid_t read_row_id(RowInformation* info, Row* row);
+ssize_t col_offset(RowInformation* info, ssize_t col_pos);
+uint32_t read_row_id(RowInformation* info, Row* row);
 char* read_row_text(RowInformation* info, Row* row, ssize_t col_pos);
 uint32_t read_row_int(RowInformation*info, Row* row, ssize_t col_pos);
 double_t read_row_real(RowInformation* info, Row* row, ssize_t col_pos);
 void print_row(Table* table, ssize_t row_pos);
 // Storing row values functions
-void store_row_id(Table* table, Row* row, uid_t col_data);
+void store_row_id(Table* table, Row* row, uint32_t col_data);
 void store_row_text(Table* table, Row* row, ssize_t col_pos, char* col_data);
 void store_row_int(Table* table, Row* row, ssize_t col_pos, uint32_t col_data);
 void store_row_real(Table* table, Row* row, ssize_t col_pos, double_t col_data);
