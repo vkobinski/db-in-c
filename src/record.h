@@ -2,27 +2,36 @@
 #define RECORD_H
 
 #include <inttypes.h>
+#include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 #include "string_utils.h"
 #define PAGE_SIZE 4096
-#define STRING_MAX_SIZE 50
+#define TEXT_MAX_SIZE 100
 #define MAX_TABLE_PAGES 100
-#define ROWS_PER_PAGE (PAGE_SIZE/sizeof(Row))
-#define TOTAL_ROWS (ROWS_PER_PAGE * MAX_TABLE_PAGES)
 #define MAX_COLUMNS 50
 
-// A page is just a space in memory, this will make the serialization and deserialization easier
 typedef struct {
-  uint32_t id;
-  char username[STRING_MAX_SIZE];
-  char email[STRING_MAX_SIZE];
+  intptr_t* column_data;
 } Row;
 
 typedef enum {
+  ID,
   INT,
   REAL,
   TEXT
-} RowType;
+} ColumnType;
+
+typedef struct {
+  ColumnType type;
+  ssize_t col_pos;
+  union {
+    uid_t id;
+    char* text;
+    uint32_t integer;
+    double_t real;
+  };
+} Column;
 
 typedef struct {
   int file_descriptor;
@@ -31,9 +40,10 @@ typedef struct {
 } Pager;
 
 typedef struct {
-  RowType row_types[MAX_COLUMNS];
-  char** row_names;
-  ssize_t columns_count;
+  size_t row_size;
+  ssize_t col_count;
+  ColumnType col_types[MAX_COLUMNS];
+  char** col_names;
 } RowInformation;
 
 // TODO(#7): [Data-Structure] implement a better memory implementation, then a b-tree implementation
@@ -44,24 +54,46 @@ typedef struct {
   char table_name[50];
 } Table;
 
-void* row_slot(Table* table, uint32_t row_id);
-void* row_page(Table* table, uint32_t row_id);
+void* row_slot(Table* table, uid_t row_id);
+void* row_page(Table* table, uid_t row_id);
 
 
-Row* get_row();
-Row* deserialize_row(Table* table, uint32_t row_id);
-void serialize_row(Table* table, Row* row);
+Row* get_row(RowInformation* info);
+Row* deserialize_row(Table* table, ssize_t row_pos);
+void serialize_row(Table* table, ssize_t row_pos, Column** columns);
 
 void additional_rows_flush(Table* table);
 void page_flush(Pager* pager, ssize_t pos);
 void save_pager_content(Table* table);
 
 void* get_page(Table* table, uint32_t page_num);
-
 Pager* pager_open(const char* filename);
 void pager_flush(Table* table);
 
 RowInformation* create_row_information(char* table_description);
+size_t col_size(ColumnType type);
+// If the stop_col argument is -1, then the function returns
+// the size of the entire row
+size_t row_size(RowInformation* info, ssize_t stop_col);
+size_t row_col_size(ColumnType type);
+size_t rows_per_page(RowInformation* info);
+size_t total_rows(RowInformation* info);
+
+ssize_t col_pos_by_name(RowInformation* info, char* name);
+
+// Reading row values functions
+Row* read_row_data(Table* table, ssize_t row_pos);
+size_t col_offset(RowInformation* info, ssize_t col_pos);
+uid_t read_row_id(RowInformation* info, Row* row);
+char* read_row_text(RowInformation* info, Row* row, ssize_t col_pos);
+uint32_t read_row_int(RowInformation*info, Row* row, ssize_t col_pos);
+double_t read_row_real(RowInformation* info, Row* row, ssize_t col_pos);
+char* row_to_string(Table* table, ssize_t row_pos);
+// Storing row values functions
+void store_row_id(Table* table, Row* row, uid_t col_data);
+void store_row_text(Table* table, Row* row, ssize_t col_pos, char* col_data);
+void store_row_int(Table* table, Row* row, ssize_t col_pos, uint32_t col_data);
+void store_row_real(Table* table, Row* row, ssize_t col_pos, double_t col_data);
 
 Table* db_open(const char* filename);
 void db_close(Table* table);

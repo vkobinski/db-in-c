@@ -6,35 +6,111 @@
 #include <unistd.h>
 #include <errno.h>
 
-const ssize_t id_offset = sizeof(uint32_t);
-const ssize_t username_offset = id_offset;
-const ssize_t email_offset = username_offset + sizeof(char) * STRING_MAX_SIZE;
-const ssize_t string_sizes = sizeof(char) * STRING_MAX_SIZE;
+Row* deserialize_row(Table* table, ssize_t row_pos) {
 
-Row* deserialize_row(Table* table, uint32_t row_id) {
-  char* row_start = row_slot(table, row_id);
+  intptr_t* row_start = row_slot(table, row_pos);
+  Row* row = get_row(table->row_info);
+  return row;
+}
 
-  Row* row = get_row();
-  row->id = row_id;
-
-  memcpy(row->username, row_start + username_offset, string_sizes);
-  memcpy(row->email, row_start + email_offset, string_sizes);
+Row* read_row_data(Table* table, ssize_t row_pos) {
+  intptr_t* row_start = row_slot(table, row_pos);
+  Row* row = malloc(sizeof(Row));
+  row->column_data = row_start;
 
   return row;
 }
 
-void serialize_row(Table* table, Row* row) {
-  char* row_start = row_slot(table, row->id);
+char* row_to_string(Table* table, ssize_t row_pos) {
+  RowInformation* info = table->row_info;
+  Row* row = read_row_data(table, row_pos);
 
-  memcpy(row_start, &(row->id), sizeof(uint32_t));
-  memcpy(row_start + username_offset, &(row->username), string_sizes);
-  memcpy(row_start + email_offset, &(row->email), string_sizes);
+  uid_t cur_id;
+  uint32_t cur_int;
+  char* cur_str;
+  double_t cur_real;
+  size_t size_col;
+  char* c;
+
+  for(ssize_t i = 0; i < info->col_count; i++) {
+
+    switch (info->col_types[i]) {
+      case ID:
+        size_col = row_col_size(info->col_types[i]);
+        cur_id = read_row_id(table->row_info, row);
+        c = (char*)malloc(size_col + 2);
+        sprintf(c ,"%d,",cur_id);
+
+        strcat(row_string, c);
+
+        free(c);
+        break;
+      case INT:
+        size_col = row_col_size(info->col_types[i]);
+        cur_int = read_row_int(table->row_info, row, i);
+        c = (char*)malloc(size_col + 2);
+        sprintf(c ,"%d,",cur_int);
+        strcat(row_string, c);
+        free(c);
+        break;
+      case REAL:
+        cur_real = read_row_real(table->row_info, row, i);
+        size_col = row_col_size(info->col_types[i]);
+        c = (char*)malloc(size_col + 2);
+        sprintf(c ,"%f,",cur_real);
+        strcat(row_string, c);
+        free(c);
+        break;
+      case TEXT:
+        cur_str = read_row_text(table->row_info, row, i);
+        sprintf(cur_str ,"%s,", cur_str);
+        strcat(row_string, cur_str);
+        break;
+      default:
+        assert(0 && "Column has type not known");
+        exit(EXIT_FAILURE);
+    }
+  }
+
+  return row_string;
 }
 
-Row* get_row() {
+void serialize_row(Table* table, ssize_t row_id, Column** columns) {
+  RowInformation* info = table->row_info;
+  Row* row = read_row_data(table, row_id);
+
+    for(ssize_t i = 0; i < info->col_count; i++) {
+    Column* cur = columns[i];
+
+    switch (cur->type) {
+      case ID:
+        store_row_id(table, row, cur->id);
+        break;
+      case INT:
+        store_row_int(table, row, cur->col_pos, cur->integer);
+        break;
+      case REAL:
+        store_row_real(table, row, cur->col_pos, cur->real);
+        break;
+      case TEXT:
+        store_row_text(table, row, cur->col_pos, cur->text);
+        break;
+      default:
+        assert(0 && "Column has type not known");
+        exit(EXIT_FAILURE);
+
+    }
+
+    free(cur);
+  }
+  free(row);
+  free(columns);
+}
+
+Row* get_row(RowInformation* info) {
 
   Row* row = (Row*) malloc(sizeof(Row));
-  row->id = 0;
+  row->column_data = malloc(row_size(info, -1));
 
   return row;
 }
@@ -71,25 +147,28 @@ void* get_page(Table* table, uint32_t page_num) {
 
 void* row_page(Table* table, uint32_t row_id) {
   Pager* pager = table->pager;
-  void* row_page = pager->pages[row_id/ROWS_PER_PAGE];
+  size_t rows_page = rows_per_page(table->row_info);
+
+  void* row_page = pager->pages[row_id/rows_page];
 
   if(row_page == NULL) {
-    row_page = malloc(sizeof(Row) * ROWS_PER_PAGE);
-    pager->pages[row_id/ROWS_PER_PAGE] = row_page;
+    row_page = malloc(row_size(table->row_info, -1) * rows_page);
+    pager->pages[row_id/rows_page] = row_page;
   }
   return row_page;
 
 }
 
-void* row_slot(Table* table, uint32_t row_id) {
+void* row_slot(Table* table, uid_t row_id) {
 
-  uint32_t page_num = row_id/ROWS_PER_PAGE;
+  RowInformation* info = table->row_info;
+  size_t rows_page = rows_per_page(info);
+  uint32_t page_num = row_id/rows_page;
   char* page = get_page(table, page_num);
 
-  ssize_t row_offset = (sizeof(Row) * ((row_id-1) % ROWS_PER_PAGE));
+  ssize_t row_offset = (row_size(info, -1) * ((row_id-1) % rows_page));
 
   return page + row_offset;
-
 }
 
 Pager* pager_open(const char* filename) {
@@ -111,11 +190,7 @@ Pager* pager_open(const char* filename) {
 }
 
 Table* db_open(const char* filename) {
-
   Table* table = (Table*) malloc(sizeof(Table));
-  table->pager = pager_open(filename);
-
-  table->num_rows = table->pager->file_length / sizeof(Row);
 
   // TODO(#8): Load row information from file
   const char* s = "(name:text, email:text)";
@@ -126,14 +201,23 @@ Table* db_open(const char* filename) {
   //TODO(#9): Read table name from file
   memcpy(table->table_name, "user", 5);
 
+
+  table->pager = pager_open(filename);
+
   table->row_info = create_row_information(c);
+  size_t size = row_size(table->row_info, -1);
+  table->num_rows = table->pager->file_length / size;
+
 
   return table;
 }
 
 void additional_rows_flush(Table* table) {
-  uint32_t num_full_pages = (table->num_rows / ROWS_PER_PAGE);
-  uint32_t additional_rows = table->num_rows % ROWS_PER_PAGE;
+  size_t rows_page = rows_per_page(table->row_info);
+  uint32_t num_full_pages = (table->num_rows / rows_page);
+  uint32_t additional_rows = table->num_rows % rows_page;
+
+  size_t size = row_size(table->row_info, -1);
 
   Pager* pager = table->pager;
   int fd = pager->file_descriptor;
@@ -143,10 +227,10 @@ void additional_rows_flush(Table* table) {
 
     if(pager->pages[page_num] != NULL) {
       lseek(fd, page_num * PAGE_SIZE, SEEK_SET);
-      uint64_t bytes_written = write(fd, pager->pages[page_num], additional_rows * sizeof(Row));
+      uint64_t bytes_written = write(fd, pager->pages[page_num], additional_rows * size);
 
-      if(bytes_written < sizeof(Row)) {
-        ssize_t not_written_rows = (bytes_written - (additional_rows * sizeof(Row))) / sizeof(Row);
+      if(bytes_written < size) {
+        ssize_t not_written_rows = (bytes_written - (additional_rows * size)) / size;
         printf("Could not write %zd rows to disk.\n", not_written_rows);
         exit(EXIT_FAILURE);
       }
@@ -174,14 +258,161 @@ void page_flush(Pager* pager, ssize_t pos) {
 
 void save_pager_content(Table* table) {
   Pager* pager = table->pager;
-  uint32_t num_full_pages = (table->num_rows / ROWS_PER_PAGE);
+  size_t rows_page = rows_per_page(table->row_info);
+  uint32_t num_full_pages = (table->num_rows / rows_page);
 
   for(ssize_t i = 0; i < num_full_pages; i++) {
     page_flush(pager, i);
   }
 
   additional_rows_flush(table);
+}
 
+ssize_t col_pos_by_name(RowInformation* info, char* name) {
+  ssize_t col_pos = -1;
+
+  for(ssize_t i = 0; i < info->col_count; i++) {
+    if(strcmp(name, info->col_names[i]) == 0) {
+      col_pos = i;
+    }
+  }
+
+  if(col_pos == -1) {
+    printf("Could not find column [%s]", name);
+    return -1;
+  }
+
+  return col_pos;
+}
+
+size_t col_offset(RowInformation* info, ssize_t col_pos) {
+  size_t offset = row_size(info, col_pos);
+  return offset;
+}
+
+uid_t read_row_id(RowInformation* info, Row* row) {
+  intptr_t* col_addres = row->column_data + col_offset(info, 0);
+  return (uid_t) *col_addres;
+}
+
+char* read_row_text(RowInformation* info, Row* row, ssize_t col_pos) {
+  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
+  return (char*) col_addres;
+}
+
+uint32_t read_row_int(RowInformation*info, Row* row, ssize_t col_pos) {
+  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
+  return (uint32_t) *col_addres;
+}
+
+double_t read_row_real(RowInformation*info, Row* row, ssize_t col_pos) {
+  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
+  return (double_t) *col_addres;
+}
+
+void store_row_text(Table* table, Row* row, ssize_t col_pos, char* col_data) {
+  RowInformation* info = table->row_info;
+  intptr_t* col_addres = row->column_data + col_offset(info, col_pos);
+  memcpy(col_addres, col_data, TEXT_MAX_SIZE);
+}
+
+void store_row_id(Table* table, Row* row, uid_t col_data) {
+  intptr_t* col_addres = row->column_data + col_offset(table->row_info, 0);
+  *col_addres = col_data;
+}
+
+void store_row_int(Table* table, Row* row, ssize_t col_pos, uint32_t col_data) {
+  RowInformation* info = table->row_info;
+  uint32_t* col_addres = (uint32_t*) (row->column_data + col_offset(info, col_pos));
+  *col_addres = col_data;
+}
+
+void store_row_real(Table* table, Row* row, ssize_t col_pos, double_t col_data) {
+  RowInformation* info = table->row_info;
+  double_t* col_addres = (double_t*) (row->column_data + col_offset(info, col_pos));
+  *col_addres = col_data;
+}
+
+size_t row_col_size(ColumnType type) {
+  switch(type) {
+      case ID:
+        return sizeof(uid_t);
+        break;
+      case INT:
+        return sizeof(int32_t);
+        break;
+      case REAL:
+        return sizeof(double_t);
+        break;
+      case TEXT:
+        return sizeof(char) * TEXT_MAX_SIZE;
+        break;
+      default:
+        assert(0 && "Column has type not known");
+        exit(EXIT_FAILURE);
+    }
+}
+
+size_t row_size(RowInformation* info, ssize_t stop_col) {
+  ssize_t stop = info->col_count;
+
+  if(stop_col != -1) stop = stop_col;
+
+  size_t size = 0;
+  for(ssize_t i = 0; i < stop; i++) {
+    switch(info->col_types[i]) {
+      case ID:
+        size += row_col_size(info->col_types[i]);
+        break;
+      case INT:
+        size += row_col_size(info->col_types[i]);
+        break;
+      case REAL:
+        size += row_col_size(info->col_types[i]);
+        break;
+      case TEXT:
+        size += row_col_size(info->col_types[i]);
+        break;
+      default:
+        assert(0 && "Column has type not known");
+        exit(EXIT_FAILURE);
+    }
+  }
+
+  return size;
+}
+
+size_t rows_per_page(RowInformation* info) {
+
+  size_t size = row_size(info, -1);
+  return PAGE_SIZE / size;
+}
+
+size_t total_rows(RowInformation* info) {
+  return rows_per_page(info) * MAX_TABLE_PAGES;
+}
+
+size_t col_size(ColumnType type) {
+  size_t size;
+  switch(type) {
+    case ID:
+      size = sizeof(uid_t);
+      break;
+    case INT:
+      size = sizeof(int32_t);
+      break;
+    case REAL:
+      size = sizeof(double_t);
+      break;
+    case TEXT:
+      size = sizeof(char) * TEXT_MAX_SIZE;
+      break;
+    default:
+      assert(0 && "Column has type not known");
+      exit(EXIT_FAILURE);
+  }
+
+  return size;
 }
 
 // The table information will be of this form: (type:column_name, type: column_name)
@@ -194,16 +425,16 @@ RowInformation* create_row_information(char* table_description) {
   char** columns = split(table_description, ',', size);
 
   RowInformation* row_information = (RowInformation*) malloc(sizeof(RowInformation));
-  row_information->row_names = malloc(sizeof(char*) * (*size)+1);
-  row_information->columns_count = *size + 1;
+  row_information->col_names = malloc(sizeof(char*) * (*size)+1);
+  row_information->col_count = *size + 1;
 
-  row_information->row_types[0] = INT;
+  row_information->col_types[0] = ID;
 
   const char* s = "id";
   char* c = (char*)malloc(strlen(s)+1);
   strcpy(c,s);
 
-  row_information->row_names[0] = c;
+  row_information->col_names[0] = c;
 
   for(int i = 0; i < *size; i++) {
     char** column = split(columns[i],':', NULL);
@@ -219,24 +450,26 @@ RowInformation* create_row_information(char* table_description) {
       exit(EXIT_FAILURE);
     }
 
-    RowType row_type;
+    ColumnType col_type;
 
-    if(strcmp(tipo, "int") == 0) row_type = INT;
-    else if(strcmp(tipo, "real") == 0) row_type = REAL;
-    else if(strcmp(tipo, "text") == 0) row_type = TEXT;
+    if(strcmp(tipo, "int") == 0) col_type = INT;
+    else if(strcmp(tipo, "real") == 0) col_type = REAL;
+    else if(strcmp(tipo, "text") == 0) col_type = TEXT;
     else {
       printf("Could not parse row column of type: %s\n", tipo);
       exit(EXIT_FAILURE);
     }
 
-    row_information->row_types[i+1] = row_type;
-    row_information->row_names[i+1] = (char*) malloc(sizeof(strlen(nome)) + 1);
-    memcpy(row_information->row_names[i+1], nome, strlen(nome) + 1);
+    row_information->col_types[i+1] = col_type;
+    row_information->col_names[i+1] = (char*) malloc(sizeof(strlen(nome)) + 1);
+    memcpy(row_information->col_names[i+1], nome, strlen(nome) + 1);
 
     free(tipo);
     free(nome);
 
   }
+
+  row_information->row_size = row_size(row_information, -1);
 
   return row_information;
 }

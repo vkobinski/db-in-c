@@ -53,8 +53,8 @@ uid_t find_highest_id(Table* table) {
 SelectResult execute_select(Table* table) {
 
   for(uint32_t i = 0; i < table->num_rows; i++) {
-    char* str = row_to_string(table, i+1);
-    printf("(%s)\n",str);
+    char* str = row_to_string(table, i);
+    printf("(%s)",str);
 
     free(str);
   }
@@ -64,13 +64,12 @@ SelectResult execute_select(Table* table) {
 
 InsertResult execute_insert(Table* table, Row* row) {
 
-  //if(table->num_rows == total_rows(table->row_info)) return INSERT_MAX_ROWS_ERROR;
+  if(table->num_rows == total_rows(table->row_info)) return INSERT_MAX_ROWS_ERROR;
 
-  //row->id = find_highest_id(table) + 1;
-  //serialize_row(table, row);
+  row->id = find_highest_id(table) + 1;
+  serialize_row(table, row);
 
-
-  //return INSERT_SUCCESS;
+  table->num_rows++;
 
   return INSERT_SUCCESS;
 }
@@ -88,19 +87,11 @@ StatementResult prepare_insert(Table* table) {
   double_t num_d;
   char* err;
 
-  Column* col_id = malloc(sizeof(Column));
-  col_id->id = find_highest_id(table) + 1;
-  col_id->type = ID;
-  col_id->col_pos = 0;
-
-  columns[0] = col_id;
-
-  char* cur_tok = strtok(token, ",");
-
   for(ssize_t i = 1; i < info->col_count; i++) {
     Column* col = malloc(sizeof(Column));
-    columns[i] = col;
+    columns[i-1] = col;
 
+    char* cur_tok = strtok(token, ",");
     char* cur_token = calloc(strlen(cur_tok), sizeof(char));
     memcpy(cur_token, cur_tok, strlen(cur_tok));
     char* trimmed = trim(cur_token);
@@ -119,7 +110,6 @@ StatementResult prepare_insert(Table* table) {
         }
         col->col_pos = i;
         col->integer = num_i;
-        col->type = INT;
         free(trimmed);
         break;
       case REAL:
@@ -127,7 +117,6 @@ StatementResult prepare_insert(Table* table) {
         if(*err == 0) {
           col->col_pos = i;
           col->real = num_d;
-          col->type = REAL;
         }
         if (!isspace((unsigned char)*err)) {
           printf("Could not convert %s into a Real for column %s",
@@ -140,21 +129,18 @@ StatementResult prepare_insert(Table* table) {
       case TEXT:
         col->col_pos = i;
         col->text = trimmed;
-        col->type = TEXT;
         break;
       default:
         assert(0 && "Column has type not known");
         exit(EXIT_FAILURE);
 
     }
-  cur_tok = strtok(NULL, ",");
+
   }
 
   uid_t id = find_highest_id(table) + 1;
   serialize_row(table, id, columns);
   printf("Executed.\n");
-
-  table->num_rows++;
 
   return STATEMENT_SUCCESS;
 }

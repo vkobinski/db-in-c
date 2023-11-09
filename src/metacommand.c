@@ -5,10 +5,12 @@ void print_table_info(Table* table) {
   RowInformation* info = table->row_info;
   printf("Table %s:\n", table->table_name);
 
-  for(int i = 0; i < info->columns_count; i++) {
-    printf("\tColumn Name: %s, ", info->row_names[i]);
+  for(int i = 0; i < info->col_count; i++) {
+    printf("\tColumn Name: %s, ", info->col_names[i]);
 
-    switch(info->row_types[i]) {
+    switch(info->col_types[i]) {
+      case ID:
+        printf("Id");
       case INT:
         printf("Integer");
         break;
