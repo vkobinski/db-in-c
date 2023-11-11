@@ -47,6 +47,7 @@ char* trim(char* str) {
 
 }
 
+// TODOOOOO(#10): If delimiter is not found, a segmentation error occurs
 char** split(char* str, const char delimiter, int* size) {
     StartFinishPair pairs[MAX_TOKEN_QTD];
     size_t len = strlen(str);
