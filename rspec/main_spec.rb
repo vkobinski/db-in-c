@@ -49,6 +49,18 @@ describe 'database' do
     ])
   end
 
+  it 'test create table' do
+    result = run_script([
+      "CREATE TABLE pessoa (nome: text, endereco: text, idade: int)",
+      ".exit",
+    ])
+
+    expect(result).to match_array([
+      "db > Table pessoa created.",
+      "db > ",
+    ])
+  end
+
   it 'inserts and retrieves a row with space between commas' do
     result = run_script([
       "insert (  user1  ,  person1@example.com  )",
@@ -61,8 +73,6 @@ describe 'database' do
       "db > ",
     ])
   end
-
-
 
   it 'inserts 2 rows and retrieves 2 rows' do
     result = run_script([
@@ -173,6 +183,5 @@ describe 'database' do
     ])
 
   end
-
 
 end
