@@ -27,11 +27,13 @@ describe 'database' do
 
   it 'inserts and retrieves a row' do
     result = run_script([
+      "CREATE TABLE pessoa (nome: text, email: text)",
       "insert (user1,person1@example.com)",
       "select",
       ".exit"
     ])
     expect(result).to match_array([
+      "db > Executed.",
       "db > Executed.",
       "db > (1, user1, person1@example.com)",
       "db > ",
@@ -56,18 +58,20 @@ describe 'database' do
     ])
 
     expect(result).to match_array([
-      "db > Table pessoa created.",
+      "db > Executed.",
       "db > ",
     ])
   end
 
   it 'inserts and retrieves a row with space between commas' do
     result = run_script([
+      "CREATE TABLE pessoa (nome: text, email: text)",
       "insert (  user1  ,  person1@example.com  )",
       "select",
       ".exit"
     ])
     expect(result).to match_array([
+      "db > Executed.",
       "db > Executed.",
       "db > (1, user1, person1@example.com)",
       "db > ",
@@ -76,12 +80,14 @@ describe 'database' do
 
   it 'inserts 2 rows and retrieves 2 rows' do
     result = run_script([
+      "CREATE TABLE pessoa (nome: text, email: text)",
       "insert (user1,person1@example.com)",
       "insert (user2,person2@example.com)",
       "select",
       ".exit"
     ])
     expect(result).to match_array([
+      "db > Executed.",
       "db > Executed.",
       "db > Executed.",
       "db > (1, user1, person1@example.com)",
@@ -114,11 +120,13 @@ describe 'database' do
 
   it 'test insert statement' do
     result = run_script([
+      "CREATE TABLE pessoa (nome: text, email: text)",
       "insert (a,b)",
       ".exit"
     ])
 
     expect(result).to match_array([
+      "db > Executed.",
       "db > Executed.",
       "db > "
     ])
@@ -132,12 +140,14 @@ describe 'database' do
 
     expect(result).to match_array([
       "db > Executed.",
+      "db > Executed.",
       "db > "
     ])
   end
 
   it 'test insert into database, and select after loading from the disk' do
     result = run_script([
+      "CREATE TABLE pessoa (nome: text, email: text)",
       "INSERT (a,b)",
       ".exit"
     ])
@@ -148,6 +158,7 @@ describe 'database' do
     ])
 
     expect(result).to match_array([
+      "db > Executed.",
       "db > Executed.",
       "db > ",
     ])
@@ -160,6 +171,7 @@ describe 'database' do
 
   it 'inserts 2 rows and retrieves 2 rows after saving' do
     result = run_script([
+      "CREATE TABLE pessoa (nome: text, email: text)",
       "insert (user1,person1@example.com)",
       "insert (user2,person2@example.com)",
       ".exit"
@@ -171,6 +183,7 @@ describe 'database' do
     ])
 
     expect(result).to match_array([
+      "db > Executed.",
       "db > Executed.",
       "db > Executed.",
       "db > ",

@@ -70,7 +70,7 @@ void* get_page(Table* table, uint32_t page_num);
 Pager* pager_open(const char* filename);
 void pager_flush(Table* table);
 
-RowInformation* create_row_information(char* table_description);
+RowInformation* create_row_information(char* table_name, char* table_description);
 size_t col_size(ColumnType type);
 // If the stop_col argument is -1, then the function returns
 // the size of the entire row

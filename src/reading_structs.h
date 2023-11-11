@@ -36,6 +36,7 @@ typedef enum {
   STATEMENT_STRING_TOO_LONG,
   STATEMENT_INSERT_WRONG_ARGUMENTS,
   STATEMENT_SELECT_WRONG_ARGUMENTS,
+  STATEMENT_CREATE_TABLE_WRONG_ARGS,
   STATEMENT_SUCCESS,
   NOT_STATEMENT,
 } StatementResult;
@@ -49,13 +50,21 @@ typedef enum {
 typedef enum {
   INSERT_SUCCESS,
   INSERT_MAX_ROWS_ERROR,
+  INSERT_ERROR,
 } InsertResult;
+
+typedef struct {
+    uint8_t col_count;
+    uint32_t table_name_len;
+    char column_names[MAX_COLUMNS][STRING_MAX_SIZE];
+    uint32_t column_sizes[MAX_COLUMNS];
+} TableDescriptionSerialized;
 
 int find_higher_id(Table* table);
 
 Statement* get_statement();
 
-StatementResult prepare_create_table(InputBuffer* input_buffer);
+StatementResult prepare_create_table(InputBuffer* input_buffer, Table* table);
 StatementResult prepare_select(InputBuffer* input_buffer, Statement* statement, Table* table);
 StatementResult prepare_insert(Table* table, char* token);
 StatementResult prepare_statement(InputBuffer* input_buffer, Table* table);

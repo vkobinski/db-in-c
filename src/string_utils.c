@@ -72,10 +72,19 @@ char** split(char* str, const char delimiter, int* size) {
         }
     }
 
+
     if(size != NULL) *size = last_pair + 1;
 
     char** tokens = (char**)malloc((last_pair + 1) * sizeof(char*));
     size_t total_size = 0;
+
+    if(last_pair == 0) {
+        tokens[0] = (char*)malloc(strlen(str) + 1);
+        strcpy(tokens[0], str);
+        tokens[0][strlen(str)+1] = '\0';
+
+        return tokens;
+    }
 
     for (size_t i = 0; i < last_pair; i++) {
         size_t current_size = pairs[i].str_finish - pairs[i].str_start;
