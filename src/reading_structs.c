@@ -62,8 +62,9 @@ SelectResult execute_select(Table* table) {
 }
 
 
-StatementResult prepare_insert(Table* table) {
-  char* token;
+StatementResult prepare_insert(Table* table, char* token) {
+
+  strtok(token, "(");
   token = strtok(NULL, "(");
 
   RowInformation* info = table->row_info;
@@ -151,15 +152,15 @@ StatementResult prepare_create_table(InputBuffer* input_buffer) {
 
 StatementResult prepare_statement(InputBuffer* input_buffer, Table* table) {
   char* token;
-  token = strtok(input_buffer->buffer, " ");
+  token = input_buffer->buffer;
   lower_case_string(token);
 
-  if(strcmp(token, "select") == 0) {
+  if(strncmp(token, "select", 6) == 0) {
     execute_select(table);
     return STATEMENT_SUCCESS;
-  } else if(strcmp(token, "insert") == 0) {
-    return prepare_insert(table);
-  } else if(strcmp(token, "create_table") == 0) {
+  } else if(strncmp(token, "insert", 6) == 0) {
+    return prepare_insert(table, token);
+  } else if(strncmp(token, "create table", 13) == 0) {
     return prepare_create_table(input_buffer);
   }
   else return NOT_STATEMENT;

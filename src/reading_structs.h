@@ -18,7 +18,6 @@ typedef struct {
 InputBuffer* get_input_buffer();
 
 void close_input_buffer(InputBuffer* input_buffer);
-
 void read_buffer(InputBuffer* input_buffer);
 
 typedef enum  {
@@ -58,7 +57,7 @@ Statement* get_statement();
 
 StatementResult prepare_create_table(InputBuffer* input_buffer);
 StatementResult prepare_select(InputBuffer* input_buffer, Statement* statement, Table* table);
-StatementResult prepare_insert(Table* table);
+StatementResult prepare_insert(Table* table, char* token);
 StatementResult prepare_statement(InputBuffer* input_buffer, Table* table);
 
 #endif
