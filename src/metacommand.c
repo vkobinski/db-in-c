@@ -5,7 +5,7 @@ void print_help() {
   printf("SQLite Commands:\n");
   printf("\tINSERT (arg1, arg2...)\tThe args types need to align to the table column order.\n");
   printf("\tSELECT \tReturns all rows informations.\n");
-  printf("\tCREATE_TABLE table_name (coltype1:colname1, coltype2:colname2...) \tCreates table based on the arguments,\n\
+  printf("\tCREATE_TABLE table_name (colname1:coltype1, colname1:coltype2...) \tCreates table based on the arguments,\n\
       \tthe types must be one of the following: Real, Int, Text.\n");
 }
 
