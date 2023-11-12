@@ -134,6 +134,7 @@ describe 'database' do
 
   it 'test uppercase insert statement' do
     result = run_script([
+      "CREATE TABLE ab (a:text, b:text)",
       "INSERT (a,b)",
       ".exit"
     ])

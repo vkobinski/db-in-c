@@ -57,7 +57,7 @@ SelectResult execute_select(Table *table) {
     return SELECT_ERROR;
   }
 
-  if(table->num_rows) {
+  if(table->num_rows == 0) {
       printf("Table has no rows.\n");
   }
 
@@ -174,7 +174,7 @@ StatementResult prepare_create_table(InputBuffer *input_buffer, Table *table) {
 
   s = verbs[2];
   char *table_name = (char *)malloc(strlen(s) + 1);
-  strcpy(table_name, s);
+  strcpy(table->table_name, s);
 
   RowInformation *info = create_row_information(table_name, table_cols);
   table->row_info = info;

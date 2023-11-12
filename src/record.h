@@ -36,6 +36,7 @@ typedef struct {
 typedef struct {
   int file_descriptor;
   uint32_t file_length;
+  void* header;
   void* pages[MAX_TABLE_PAGES];
 } Pager;
 
@@ -94,6 +95,10 @@ void store_row_id(Table* table, Row* row, uint32_t col_data);
 void store_row_text(Table* table, Row* row, ssize_t col_pos, char* col_data);
 void store_row_int(Table* table, Row* row, ssize_t col_pos, uint32_t col_data);
 void store_row_real(Table* table, Row* row, ssize_t col_pos, double_t col_data);
+
+size_t row_information_size(Table *table);
+void read_row_information(Table *table);
+void store_row_information(Table *table);
 
 Table* db_open(const char* filename);
 void db_close(Table* table);

@@ -2,6 +2,7 @@
 #include "reading_structs.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -123,7 +124,10 @@ void *get_page(Table *table, uint32_t page_num) {
     }
 
     if (page_num <= num_pages) {
-      lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+      // TODO: Add the header size here
+      size_t offset_header = row_information_size(table);
+      lseek(pager->file_descriptor, offset_header + (page_num * PAGE_SIZE),
+            SEEK_SET);
       ssize_t bytes_read = read(pager->file_descriptor, page, PAGE_SIZE);
 
       if (bytes_read == -1) {
@@ -190,6 +194,10 @@ Table *db_open(const char *filename) {
 
   table->row_info = NULL;
 
+  if (table->pager->file_length > 0) {
+    read_row_information(table);
+  }
+
   // TODO(#8): Load row information from file
   // const char* s = "(name:text, email:text)";
   // char* c = (char*)malloc(strlen(s)+1);
@@ -221,7 +229,7 @@ void additional_rows_flush(Table *table) {
     uint32_t page_num = num_full_pages;
 
     if (pager->pages[page_num] != NULL) {
-      lseek(fd, page_num * PAGE_SIZE, SEEK_SET);
+      lseek(fd, row_information_size(table) + page_num * PAGE_SIZE, SEEK_SET);
       uint64_t bytes_written =
           write(fd, pager->pages[page_num], additional_rows * (size));
 
@@ -253,9 +261,13 @@ void page_flush(Pager *pager, ssize_t pos) {
 }
 
 void save_pager_content(Table *table) {
+  store_row_information(table);
+  if(table->row_info == NULL) return;
+
   Pager *pager = table->pager;
   size_t rows_page = rows_per_page(table->row_info);
   uint32_t num_full_pages = (table->num_rows / rows_page);
+
 
   for (ssize_t i = 0; i < num_full_pages; i++) {
     page_flush(pager, i);
@@ -306,13 +318,156 @@ double_t read_row_real(RowInformation *info, Row *row, ssize_t col_pos) {
   return *((double_t *)col_addres);
 }
 
-void store_row_information(Table *table) {
-  TableDescriptionSerialized *desc =
-      malloc(sizeof(TableDescriptionSerialized));
+size_t row_information_size(Table *table) {
+  RowInformation *info = table->row_info;
 
-  void *page = table->pager->pages[0];
-  desc->table_name_len = strlen(table->table_name);
-  desc->col_count = table->row_info->col_count;
+  size_t size = 0;
+  size += sizeof(size_t);
+  size += sizeof(uint8_t);
+  size += sizeof(size_t);
+  size_t *table_name_size = malloc(sizeof(size_t));
+  *table_name_size = strlen(table->table_name) + 1;
+
+  size += *table_name_size;
+  size += sizeof(uint32_t);
+
+  free(table_name_size);
+
+  for (uint32_t i = 0; i < info->col_count; i++) {
+
+    ColumnType type = info->col_types[i];
+    size += sizeof(ColumnType);
+    size_t *name_size = malloc(sizeof(size_t));
+    *name_size = strlen(info->col_names[i]) + 1;
+    size += sizeof(size_t);
+    free(name_size);
+  }
+  return size;
+}
+
+void read_row_information(Table *table) {
+  Pager *pager = table->pager;
+  int fd = pager->file_descriptor;
+
+  size_t *header_size = malloc(sizeof(size_t));
+
+  lseek(fd, 0, SEEK_SET);
+  ssize_t bytes_read = read(fd, header_size, sizeof(size_t));
+  lseek(fd, 0, SEEK_SET);
+
+  if (bytes_read < sizeof(size_t)) {
+    printf("Could not read table information from file.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  void *header = malloc(*header_size);
+
+  bytes_read = read(fd, header, *header_size);
+
+  if (bytes_read < *header_size) {
+    printf("Could not read table information from file.\n");
+    exit(EXIT_FAILURE);
+  }
+  size_t current_pos = sizeof(size_t);
+
+  uint8_t *col_count = (uint8_t *)(header + current_pos);
+  current_pos += sizeof(uint8_t);
+
+  size_t *table_name_size = (size_t *)(header + current_pos);
+  current_pos += sizeof(size_t);
+
+  char *table_name = (char *)header + current_pos;
+  current_pos += *table_name_size;
+  strcpy(table->table_name, table_name);
+
+  RowInformation *info = malloc(sizeof(RowInformation));
+
+  info->col_count = *col_count;
+  info->col_names = malloc(sizeof(char *) * (*col_count));
+
+  info->col_types[0] = ID;
+
+  const char *s = "id";
+  char *c = (char *)malloc(strlen(s) + 1);
+  strcpy(c, s);
+
+  info->col_names[0] = c;
+
+  uint32_t *num_rows = (uint32_t *)(header + current_pos);
+  table->num_rows = *num_rows;
+  current_pos += sizeof(uint32_t);
+
+  for (uint32_t i = 1; i < *col_count; i++) {
+    ColumnType *type = (ColumnType*)(header + current_pos);
+    current_pos += sizeof(ColumnType);
+
+    info->col_types[i] = *type;
+
+    size_t *col_name_size = (size_t *)(header + current_pos);
+    current_pos += sizeof(size_t);
+
+    info->col_names[i] = malloc(*col_name_size);
+    memcpy(info->col_names[i], header + current_pos, *col_name_size);
+    current_pos += *col_name_size;
+  }
+  table->row_info = info;
+}
+
+void store_row_information(Table *table) {
+
+    if(table->row_info == NULL) return;
+
+  RowInformation *info = table->row_info;
+
+  size_t *header_size = malloc(sizeof(size_t));
+  *header_size = row_information_size(table);
+
+  void *header = calloc(1, *header_size);
+
+  size_t* header_size_add = (size_t*)header;
+  *header_size_add = *header_size;
+
+  size_t current_pos = sizeof(size_t);
+
+  uint8_t* col_count_add = (uint8_t*)header + current_pos;
+  *col_count_add = info->col_count;
+
+  current_pos += sizeof(uint8_t);
+
+  size_t *table_name_size = malloc(sizeof(size_t));
+  *table_name_size = strlen(table->table_name) + 1;
+  memcpy(header + current_pos, table_name_size, sizeof(size_t));
+
+  current_pos += sizeof(size_t);
+  memcpy(header + current_pos, table->table_name, *table_name_size);
+  current_pos += *table_name_size;
+
+  free(table_name_size);
+
+  memcpy(header + current_pos, &table->num_rows, sizeof(uint32_t));
+  current_pos += sizeof(uint32_t);
+
+  for (uint32_t i = 0; i < info->col_count; i++) {
+
+    ColumnType* type = malloc(sizeof(ColumnType));
+    *type = info->col_types[i];
+
+    if (*type == ID)
+      continue;
+
+    memcpy(header + current_pos, type, sizeof(ColumnType));
+    current_pos += sizeof(ColumnType);
+    size_t *name_size = malloc(sizeof(size_t));
+    *name_size = strlen(info->col_names[i]) + 1;
+    memcpy(header + current_pos, name_size, sizeof(size_t));
+    current_pos += sizeof(size_t);
+    memcpy(header + current_pos, info->col_names[i], *name_size);
+    current_pos += *name_size;
+  }
+
+  int fd = table->pager->file_descriptor;
+  lseek(fd, 0, SEEK_SET);
+  write(fd, header, *header_size);
 }
 
 void store_row_text(Table *table, Row *row, ssize_t col_pos, char *col_data) {
@@ -435,6 +590,7 @@ RowInformation *create_row_information(char *table_name,
 
   RowInformation *row_information =
       (RowInformation *)malloc(sizeof(RowInformation));
+
   row_information->col_names = malloc(sizeof(char *) * (*size + 1));
   row_information->col_count = *size + 1;
 
