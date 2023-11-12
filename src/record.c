@@ -124,7 +124,7 @@ void *get_page(Table *table, uint32_t page_num) {
     }
 
     if (page_num <= num_pages) {
-      // TODO: Add the header size here
+      // TODO(#11): Add the header size here
       size_t offset_header = row_information_size(table);
       lseek(pager->file_descriptor, offset_header + (page_num * PAGE_SIZE),
             SEEK_SET);
