@@ -173,8 +173,16 @@ StatementResult prepare_create_table(InputBuffer *input_buffer, Table *table) {
   strcpy(table_cols, s);
 
   s = verbs[2];
+
+  if(strlen(s) == 0) {
+      printf("Table name field not populated.\n");
+      return STATEMENT_CREATE_TABLE_WRONG_ARGS;
+  }
+
+
   char *table_name = (char *)malloc(strlen(s) + 1);
   strcpy(table->table_name, s);
+
 
   RowInformation *info = create_row_information(table_name, table_cols);
   table->row_info = info;

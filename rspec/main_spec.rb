@@ -40,6 +40,32 @@ describe 'database' do
     ])
   end
 
+  it 'create table with no name' do
+    result = run_script([
+      'CREATE TABLE (nome:text)',
+      '.exit',
+    ])
+
+    expect(result).to match_array([
+      "db > Table name field not populated.",
+      "db > ",
+    ])
+
+  end
+
+  it 'create table with no field' do
+    result = run_script([
+      "CREATE TABLE test",
+      '.exit',
+    ])
+
+    expect(result).to match_array([
+      "db > Table can't be created with no fields.",
+      "db > ",
+    ])
+
+  end
+
   it 'test invalid command' do
     result = run_script([
       "inser",
