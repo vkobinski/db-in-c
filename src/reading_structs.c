@@ -75,9 +75,15 @@ StatementResult prepare_insert(Table *table, char *token) {
   strtok(token, "(");
   token = strtok(NULL, "(");
 
+  if(token == NULL) {
+      printf("Record can't be saved with no fields.\n");
+      return STATEMENT_INSERT_WRONG_ARGUMENTS;
+
+  }
+
   if (table->row_info == NULL) {
     printf("First use the command CREATE TABLE.\n");
-    return STATEMENT_CREATE_TABLE_WRONG_ARGS;
+    return STATEMENT_INSERT_WRONG_ARGUMENTS;
   }
 
   RowInformation *info = table->row_info;
@@ -169,8 +175,15 @@ StatementResult prepare_create_table(InputBuffer *input_buffer, Table *table) {
   }
 
   char *s = strtok(NULL, "(");
+
+  if(s == NULL) {
+      printf("Table can't be created with no fields.\n");
+      return STATEMENT_CREATE_TABLE_WRONG_ARGS;
+  }
+
   char *table_cols = (char *)malloc(strlen(s) + 1);
   strcpy(table_cols, s);
+
 
   s = verbs[2];
 
