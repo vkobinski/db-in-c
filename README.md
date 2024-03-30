@@ -28,6 +28,8 @@ col_name: char[col_name_size]
 ...
 ```
 
+The rest of the file consists of the rows of the table. That are saved one in order.
+
 ## Queries
 - `CREATE TABLE <table_name> (<column_name>:<column_type>, ...)`: Creates a table with the given name and column. The column type can be `REAL`, `TEXT` and `INTEGER`. The `ID` column is automatically created in the table.
 - `INSERT (<value>, ...)`: Inserts a row with the given values. The program checks the number of values and the types of the columns to insert the row.
@@ -55,3 +57,10 @@ Then, you can run the following commands:
 ```bash
 make rspec
 ```
+
+## TODO
+
+- [ ] Implement the B-Tree
+- [ ] Implement the Schema Table, so that more tables can be stored in a single file
+- [ ] Rust API to use the database
+- [ ] Implement the DELETE query
