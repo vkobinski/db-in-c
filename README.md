@@ -8,6 +8,8 @@ The database now has the following functions:
  - Create a table
  - Get table information
 
+ The code aims to be readable, so to undestand the code, you can start by reading the `main.c` file.
+
 Right now the implementation supports one row per file. The table and its information is persisted in a file that is passed to the program as an argument.
 
 ## File Architecture
