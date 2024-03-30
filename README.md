@@ -64,3 +64,6 @@ make rspec
 - [ ] Implement the Schema Table, so that more tables can be stored in a single file
 - [ ] Rust API to use the database
 - [ ] Implement the DELETE query
+- [ ] Implement the SELECT options, like `WHERE`, `ORDER BY`, `LIMIT`
+- [ ] Implement the UPDATE query
+- [ ] Implement the INSERT query with the column names
