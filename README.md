@@ -20,7 +20,6 @@ header_size: size_t
 col_count: uint8_t
 table_name_size: size_t
 table_name: char[table_name_size]
-col_names: char[col_count][MAX_COL_NAME_SIZE]
 # For each Column
 ...
 col_type: uint8_t
