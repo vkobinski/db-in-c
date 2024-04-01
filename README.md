@@ -67,3 +67,4 @@ make rspec
 - [ ] Implement the SELECT options, like `WHERE`, `ORDER BY`, `LIMIT`
 - [ ] Implement the UPDATE query
 - [ ] Implement the INSERT query with the column names
+- [ ] Implement better String representation
